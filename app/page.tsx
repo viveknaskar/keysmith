@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Header } from '@/components/Header';
 import { FeatureOverview } from '@/components/FeatureOverview';
 import { DrawingCanvas } from '@/components/DrawingCanvas';
@@ -16,7 +16,7 @@ export default function Home() {
   const [passwordEntropyBits, setPasswordEntropyBits] = useState(0);
   const [regenerateTrigger, setRegenerateTrigger] = useState(0);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const historyIdRef = { current: 0 };
+  const historyIdRef = useRef(0);
 
   useEffect(() => {
     if (canvasEntropy.length === 0) {
