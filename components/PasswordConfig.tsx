@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -16,6 +16,18 @@ const UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const NUMBERS = '0123456789';
 const SPECIAL = '!@#$%^&*()_+-=[]{}|;:,.<>?';
 const AMBIGUOUS = new Set('0Ol1I');
+
+async function getWeatherEntropy(): Promise<string> {
+  try {
+    const response = await fetch(
+      'https://api.open-meteo.com/v1/forecast?latitude=51.51&longitude=-0.13&current=temperature_2m,wind_speed_10m,weather_code'
+    );
+    const data = await response.json();
+    return JSON.stringify(data.current);
+  } catch {
+    return '';
+  }
+}
 
 interface PasswordConfigProps {
   canvasEntropy: number[];
@@ -38,14 +50,7 @@ export function PasswordConfig({ canvasEntropy, hasDrawnEntropy, regenerateTrigg
   const [separator, setSeparator] = useState('-');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  useEffect(() => {
-    if (regenerateTrigger > 0) {
-      if (mode === 'passphrase') generatePassphrase();
-      else generatePassword();
-    }
-  }, [regenerateTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const generatePassphrase = async () => {
+  const generatePassphrase = useCallback(async () => {
     setIsGenerating(true);
     try {
       const count = wordCount[0];
@@ -80,24 +85,12 @@ export function PasswordConfig({ canvasEntropy, hasDrawnEntropy, regenerateTrigg
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [canvasEntropy, wordCount, separator, onPasswordGenerated]);
 
-  const filterAmbiguous = (chars: string) =>
-    options.excludeAmbiguous ? chars.split('').filter(c => !AMBIGUOUS.has(c)).join('') : chars;
+  const generatePassword = useCallback(async () => {
+    const filterAmbiguous = (chars: string) =>
+      options.excludeAmbiguous ? chars.split('').filter(c => !AMBIGUOUS.has(c)).join('') : chars;
 
-  const getWeatherEntropy = async (): Promise<string> => {
-    try {
-      const response = await fetch(
-        'https://api.open-meteo.com/v1/forecast?latitude=51.51&longitude=-0.13&current=temperature_2m,wind_speed_10m,weather_code'
-      );
-      const data = await response.json();
-      return JSON.stringify(data.current);
-    } catch {
-      return '';
-    }
-  };
-
-  const generatePassword = async () => {
     setIsGenerating(true);
     try {
       const parts: { chars: string; enabled: boolean }[] = [
@@ -174,7 +167,14 @@ export function PasswordConfig({ canvasEntropy, hasDrawnEntropy, regenerateTrigg
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [canvasEntropy, options, passwordLength, onPasswordGenerated]);
+
+  useEffect(() => {
+    if (regenerateTrigger > 0) {
+      if (mode === 'passphrase') generatePassphrase();
+      else generatePassword();
+    }
+  }, [regenerateTrigger, mode, generatePassphrase, generatePassword]);
 
   return (
     <div
