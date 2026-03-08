@@ -9,10 +9,18 @@ import { useState } from 'react';
 
 interface GeneratedPasswordProps {
   password: string;
-  strength: 'weak' | 'moderate' | 'strong';
+  entropyBits: number;
 }
 
-export function GeneratedPassword({ password, strength }: GeneratedPasswordProps) {
+type Strength = 'weak' | 'moderate' | 'strong';
+
+function getStrength(bits: number): Strength {
+  if (bits >= 80) return 'strong';
+  if (bits >= 60) return 'moderate';
+  return 'weak';
+}
+
+export function GeneratedPassword({ password, entropyBits }: GeneratedPasswordProps) {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = async () => {
@@ -25,22 +33,18 @@ export function GeneratedPassword({ password, strength }: GeneratedPasswordProps
     }
   };
 
-  const getStrengthColor = (strength: 'weak' | 'moderate' | 'strong') => {
-    switch (strength) {
-      case 'strong': return 'bg-green-900/30 text-green-400 hover:bg-green-900/30 border-green-700';
-      case 'moderate': return 'bg-yellow-900/30 text-yellow-400 hover:bg-yellow-900/30 border-yellow-700';
-      case 'weak': return 'bg-red-900/30 text-red-400 hover:bg-red-900/30 border-red-700';
-      default: return '';
-    }
+  const strength = getStrength(entropyBits);
+
+  const badgeColor: Record<Strength, string> = {
+    strong:   'bg-green-900/30 text-green-400 hover:bg-green-900/30 border-green-700',
+    moderate: 'bg-yellow-900/30 text-yellow-400 hover:bg-yellow-900/30 border-yellow-700',
+    weak:     'bg-red-900/30 text-red-400 hover:bg-red-900/30 border-red-700',
   };
 
-  const getStrengthText = (strength: 'weak' | 'moderate' | 'strong') => {
-    switch (strength) {
-      case 'strong': return `High-entropy password with ${password.length} characters`;
-      case 'moderate': return `Medium-entropy password with ${password.length} characters`;
-      case 'weak': return `Low-entropy password with ${password.length} characters`;
-      default: return '';
-    }
+  const strengthLabel: Record<Strength, string> = {
+    strong:   'Strong',
+    moderate: 'Moderate',
+    weak:     'Weak',
   };
 
   if (!password) {
@@ -75,7 +79,7 @@ export function GeneratedPassword({ password, strength }: GeneratedPasswordProps
             className="font-mono text-sm bg-slate-900 border-slate-600 text-white"
             type="text"
           />
-          <Button 
+          <Button
             onClick={copyToClipboard}
             variant="outline"
             size="icon"
@@ -89,12 +93,12 @@ export function GeneratedPassword({ password, strength }: GeneratedPasswordProps
           </Button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Badge className={getStrengthColor(strength)}>
-            {strength.charAt(0).toUpperCase() + strength.slice(1)}
+        <div className="flex items-center gap-3 flex-wrap">
+          <Badge className={badgeColor[strength]}>
+            {strengthLabel[strength]}
           </Badge>
           <span className="text-sm text-slate-300">
-            {getStrengthText(strength)}
+            {Math.round(entropyBits)} bits of entropy &middot; {password.length} characters
           </span>
         </div>
       </CardContent>

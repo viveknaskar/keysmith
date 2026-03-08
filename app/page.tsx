@@ -12,29 +12,18 @@ export default function Home() {
   const [entropyLevel, setEntropyLevel] = useState<'weak' | 'moderate' | 'strong'>('weak');
   const [canvasEntropy, setCanvasEntropy] = useState<number[]>([]);
   const [generatedPassword, setGeneratedPassword] = useState('');
-  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'moderate' | 'strong'>('weak');
+  const [passwordEntropyBits, setPasswordEntropyBits] = useState(0);
 
   // Calculate entropy level based on canvas data
   useEffect(() => {
     if (canvasEntropy.length === 0) {
       setEntropyLevel('weak');
-    } else if (canvasEntropy.length < 50) {
+    } else if (canvasEntropy.length < 120) {
       setEntropyLevel('moderate');
     } else {
       setEntropyLevel('strong');
     }
   }, [canvasEntropy]);
-
-  // Calculate password strength
-  useEffect(() => {
-    if (generatedPassword.length === 0) {
-      setPasswordStrength('weak');
-    } else if (generatedPassword.length < 12) {
-      setPasswordStrength('moderate');
-    } else {
-      setPasswordStrength('strong');
-    }
-  }, [generatedPassword]);
 
   return (
     <div className="min-h-screen bg-slate-900">
@@ -49,14 +38,17 @@ export default function Home() {
             onEntropyChange={setCanvasEntropy}
           />
           
-          <PasswordConfig 
+          <PasswordConfig
             canvasEntropy={canvasEntropy}
-            onPasswordGenerated={setGeneratedPassword}
+            onPasswordGenerated={(pw, bits) => {
+              setGeneratedPassword(pw);
+              setPasswordEntropyBits(bits);
+            }}
           />
-          
-          <GeneratedPassword 
+
+          <GeneratedPassword
             password={generatedPassword}
-            strength={passwordStrength}
+            entropyBits={passwordEntropyBits}
           />
           
           <PasswordStrengthTester />
