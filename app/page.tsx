@@ -13,6 +13,7 @@ export default function Home() {
   const [canvasEntropy, setCanvasEntropy] = useState<number[]>([]);
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [passwordEntropyBits, setPasswordEntropyBits] = useState(0);
+  const [regenerateTrigger, setRegenerateTrigger] = useState(0);
 
   // Calculate entropy level based on canvas data
   useEffect(() => {
@@ -40,6 +41,7 @@ export default function Home() {
           
           <PasswordConfig
             canvasEntropy={canvasEntropy}
+            regenerateTrigger={regenerateTrigger}
             onPasswordGenerated={(pw, bits) => {
               setGeneratedPassword(pw);
               setPasswordEntropyBits(bits);
@@ -49,6 +51,7 @@ export default function Home() {
           <GeneratedPassword
             password={generatedPassword}
             entropyBits={passwordEntropyBits}
+            onRegenerate={() => setRegenerateTrigger(t => t + 1)}
           />
           
           <PasswordStrengthTester />

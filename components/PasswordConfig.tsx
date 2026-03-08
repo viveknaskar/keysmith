@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { wordlists } from 'bip39';
+const wordlist = wordlists['english'];
 
 const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz';
 const UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -15,10 +19,12 @@ const AMBIGUOUS = new Set('0Ol1I');
 
 interface PasswordConfigProps {
   canvasEntropy: number[];
+  regenerateTrigger: number;
   onPasswordGenerated: (password: string, entropyBits: number) => void;
 }
 
-export function PasswordConfig({ canvasEntropy, onPasswordGenerated }: PasswordConfigProps) {
+export function PasswordConfig({ canvasEntropy, regenerateTrigger, onPasswordGenerated }: PasswordConfigProps) {
+  const [mode, setMode] = useState<'password' | 'passphrase'>('password');
   const [passwordLength, setPasswordLength] = useState([16]);
   const [options, setOptions] = useState({
     lowercase: true,
@@ -27,6 +33,44 @@ export function PasswordConfig({ canvasEntropy, onPasswordGenerated }: PasswordC
     special: true,
     excludeAmbiguous: false,
   });
+  const [wordCount, setWordCount] = useState([5]);
+  const [separator, setSeparator] = useState('-');
+
+  useEffect(() => {
+    if (regenerateTrigger > 0) {
+      if (mode === 'passphrase') generatePassphrase();
+      else generatePassword();
+    }
+  }, [regenerateTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const generatePassphrase = async () => {
+    const count = wordCount[0];
+    // Entropy: log2(2048) * count = 11 bits per word
+    const entropyBits = 11 * count;
+
+    // Collect entropy for mixing
+    const timingEntropy = `${Date.now()}:${performance.now()}`;
+    const canvasEntropyStr = canvasEntropy.join(',');
+    const nonce = crypto.randomUUID();
+    const entropyBuffer = new TextEncoder().encode([timingEntropy, canvasEntropyStr, nonce].join('|'));
+    const hashBuffer = await crypto.subtle.digest('SHA-256', entropyBuffer);
+    const hashBytes = new Uint8Array(hashBuffer);
+
+    // Pick words using crypto.getRandomValues + rejection sampling
+    // wordlist has 2048 entries — fits in 11 bits, use Uint16 (max 65536), reject >= 63488 (63488 = 31 * 2048)
+    const words: string[] = [];
+    while (words.length < count) {
+      const buf = new Uint16Array(count * 4);
+      crypto.getRandomValues(buf);
+      for (let i = 0; i < buf.length && words.length < count; i++) {
+        buf[i] ^= (hashBytes[i % 32] << 8) | hashBytes[(i + 1) % 32];
+        const maxValid = 65536 - (65536 % 2048);
+        if (buf[i] < maxValid) words.push(wordlist[buf[i] % 2048]);
+      }
+    }
+
+    onPasswordGenerated(words.join(separator), entropyBits);
+  };
 
   const filterAmbiguous = (chars: string) =>
     options.excludeAmbiguous ? chars.split('').filter(c => !AMBIGUOUS.has(c)).join('') : chars;
@@ -127,6 +171,44 @@ export function PasswordConfig({ canvasEntropy, onPasswordGenerated }: PasswordC
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <Tabs value={mode} onValueChange={v => setMode(v as 'password' | 'passphrase')}>
+          <TabsList className="bg-slate-700 w-full">
+            <TabsTrigger value="password" className="flex-1">Random Password</TabsTrigger>
+            <TabsTrigger value="passphrase" className="flex-1">Passphrase</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="passphrase" className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium text-slate-300">Number of Words</Label>
+                <span className="text-sm text-slate-400 font-mono">{wordCount[0]}</span>
+              </div>
+              <Slider value={wordCount} onValueChange={setWordCount} min={3} max={10} step={1} className="w-full" />
+            </div>
+            <div className="flex items-center gap-3">
+              <Label className="text-sm text-slate-300 shrink-0">Separator</Label>
+              <Select value={separator} onValueChange={setSeparator}>
+                <SelectTrigger className="bg-slate-900 border-slate-600 text-white w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                  <SelectItem value="-">Hyphen  (word-word)</SelectItem>
+                  <SelectItem value=" ">Space   (word word)</SelectItem>
+                  <SelectItem value=".">Dot     (word.word)</SelectItem>
+                  <SelectItem value="_">Underscore (word_word)</SelectItem>
+                  <SelectItem value="">None    (wordword)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-slate-400">
+              {wordCount[0]} words &times; 11 bits = <span className="text-white font-medium">{wordCount[0] * 11} bits</span> of entropy (BIP39 wordlist, 2048 words)
+            </p>
+            <Button onClick={generatePassphrase} className="w-full bg-blue-600 hover:bg-blue-500 text-white">
+              Generate Passphrase
+            </Button>
+          </TabsContent>
+
+          <TabsContent value="password" className="space-y-6 pt-2">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium text-slate-300">
@@ -219,6 +301,8 @@ export function PasswordConfig({ canvasEntropy, onPasswordGenerated }: PasswordC
         >
           Generate Secure Password
         </Button>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
