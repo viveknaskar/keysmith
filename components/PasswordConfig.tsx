@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2 } from 'lucide-react';
 import { wordlists } from 'bip39';
 const wordlist = wordlists['english'];
 
@@ -19,11 +20,12 @@ const AMBIGUOUS = new Set('0Ol1I');
 
 interface PasswordConfigProps {
   canvasEntropy: number[];
+  hasDrawnEntropy: boolean;
   regenerateTrigger: number;
   onPasswordGenerated: (password: string, entropyBits: number) => void;
 }
 
-export function PasswordConfig({ canvasEntropy, regenerateTrigger, onPasswordGenerated }: PasswordConfigProps) {
+export function PasswordConfig({ canvasEntropy, hasDrawnEntropy, regenerateTrigger, onPasswordGenerated }: PasswordConfigProps) {
   const [mode, setMode] = useState<'password' | 'passphrase'>('password');
   const [passwordLength, setPasswordLength] = useState([16]);
   const [options, setOptions] = useState({
@@ -35,6 +37,7 @@ export function PasswordConfig({ canvasEntropy, regenerateTrigger, onPasswordGen
   });
   const [wordCount, setWordCount] = useState([5]);
   const [separator, setSeparator] = useState('-');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     if (regenerateTrigger > 0) {
@@ -44,6 +47,8 @@ export function PasswordConfig({ canvasEntropy, regenerateTrigger, onPasswordGen
   }, [regenerateTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const generatePassphrase = async () => {
+    setIsGenerating(true);
+    try {
     const count = wordCount[0];
     // Entropy: log2(2048) * count = 11 bits per word
     const entropyBits = 11 * count;
@@ -52,9 +57,19 @@ export function PasswordConfig({ canvasEntropy, regenerateTrigger, onPasswordGen
     const timingEntropy = `${Date.now()}:${performance.now()}`;
     const canvasEntropyStr = canvasEntropy.join(',');
     const nonce = crypto.randomUUID();
-    const entropyBuffer = new TextEncoder().encode([timingEntropy, canvasEntropyStr, nonce].join('|'));
-    const hashBuffer = await crypto.subtle.digest('SHA-256', entropyBuffer);
-    const hashBytes = new Uint8Array(hashBuffer);
+    const ikm = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode([timingEntropy, canvasEntropyStr, nonce].join('|')),
+      { name: 'HKDF' },
+      false,
+      ['deriveBits'],
+    );
+    const derived = await crypto.subtle.deriveBits(
+      { name: 'HKDF', hash: 'SHA-256', salt: new TextEncoder().encode('entropypass-v1'), info: new Uint8Array() },
+      ikm,
+      256,
+    );
+    const hashBytes = new Uint8Array(derived);
 
     // Pick words using crypto.getRandomValues + rejection sampling
     // wordlist has 2048 entries — fits in 11 bits, use Uint16 (max 65536), reject >= 63488 (63488 = 31 * 2048)
@@ -69,7 +84,10 @@ export function PasswordConfig({ canvasEntropy, regenerateTrigger, onPasswordGen
       }
     }
 
-    onPasswordGenerated(words.join(separator), entropyBits);
+      onPasswordGenerated(words.join(separator), entropyBits);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const filterAmbiguous = (chars: string) =>
@@ -88,6 +106,8 @@ export function PasswordConfig({ canvasEntropy, regenerateTrigger, onPasswordGen
   };
 
   const generatePassword = async () => {
+    setIsGenerating(true);
+    try {
     const parts: { chars: string; enabled: boolean }[] = [
       { chars: filterAmbiguous(LOWERCASE), enabled: options.lowercase },
       { chars: filterAmbiguous(UPPERCASE), enabled: options.uppercase },
@@ -105,26 +125,44 @@ export function PasswordConfig({ canvasEntropy, regenerateTrigger, onPasswordGen
     const length = passwordLength[0];
     const entropyBits = Math.log2(charset.length) * length;
 
-    // 1. Collect all entropy sources
+    // 1. Collect all entropy sources (including passive device info)
     const timingEntropy = `${Date.now()}:${performance.now()}`;
     const weatherEntropy = await getWeatherEntropy();
     const canvasEntropyStr = canvasEntropy.join(',');
     const nonce = crypto.randomUUID();
+    const deviceEntropy = [
+      screen.width, screen.height, screen.colorDepth,
+      navigator.hardwareConcurrency ?? 0,
+      (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 0,
+      navigator.language,
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+    ].join(':');
 
-    const entropyString = [timingEntropy, weatherEntropy, canvasEntropyStr, nonce].join('|');
+    const entropyString = [timingEntropy, weatherEntropy, canvasEntropyStr, nonce, deviceEntropy].join('|');
 
-    // 2. SHA-256 hash to mix all entropy into 32 bytes
-    const entropyBuffer = new TextEncoder().encode(entropyString);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', entropyBuffer);
-    const hashBytes = new Uint8Array(hashBuffer);
+    // 2. HKDF: import entropy as raw key material, then derive bytes
+    const ikm = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(entropyString),
+      { name: 'HKDF' },
+      false,
+      ['deriveBits'],
+    );
+    const derived = await crypto.subtle.deriveBits(
+      { name: 'HKDF', hash: 'SHA-256', salt: new TextEncoder().encode('entropypass-v1'), info: new Uint8Array() },
+      ikm,
+      256,
+    );
+    const hkdfBytes = new Uint8Array(derived);
+    const hashBytes = hkdfBytes; // alias used by pickChar closure
 
     // 3. Generate cryptographically secure random bytes
     const randomBytes = new Uint8Array(length * 8);
     crypto.getRandomValues(randomBytes);
 
-    // 4. XOR with repeating hash to incorporate user entropy
+    // 4. XOR CSPRNG output with HKDF-derived bytes to bind user entropy
     for (let i = 0; i < randomBytes.length; i++) {
-      randomBytes[i] ^= hashBytes[i % 32];
+      randomBytes[i] ^= hkdfBytes[i % 32];
     }
 
     // Helper: pick one char from a charset using rejection sampling
@@ -160,7 +198,10 @@ export function PasswordConfig({ canvasEntropy, regenerateTrigger, onPasswordGen
       [combined[i], combined[j]] = [combined[j], combined[i]];
     }
 
-    onPasswordGenerated(combined.join(''), entropyBits);
+      onPasswordGenerated(combined.join(''), entropyBits);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -203,8 +244,8 @@ export function PasswordConfig({ canvasEntropy, regenerateTrigger, onPasswordGen
             <p className="text-xs text-slate-400">
               {wordCount[0]} words &times; 11 bits = <span className="text-white font-medium">{wordCount[0] * 11} bits</span> of entropy (BIP39 wordlist, 2048 words)
             </p>
-            <Button onClick={generatePassphrase} className="w-full bg-blue-600 hover:bg-blue-500 text-white">
-              Generate Passphrase
+            <Button onClick={generatePassphrase} disabled={isGenerating} className="w-full bg-blue-600 hover:bg-blue-500 text-white">
+              {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating…</> : 'Generate Passphrase'}
             </Button>
           </TabsContent>
 
@@ -295,11 +336,17 @@ export function PasswordConfig({ canvasEntropy, regenerateTrigger, onPasswordGen
           </div>
         </div>
 
+        {!hasDrawnEntropy && (
+          <p className="text-xs text-yellow-400 bg-yellow-900/20 border border-yellow-800 rounded-md px-3 py-2">
+            Drawing on the canvas above adds personal entropy to your password. You can still generate without it.
+          </p>
+        )}
         <Button
           onClick={generatePassword}
+          disabled={isGenerating}
           className="w-full bg-blue-600 hover:bg-blue-500 text-white"
         >
-          Generate Secure Password
+          {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating…</> : 'Generate Secure Password'}
         </Button>
           </TabsContent>
         </Tabs>

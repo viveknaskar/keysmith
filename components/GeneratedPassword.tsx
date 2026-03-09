@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Copy, CheckCircle, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Copy, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { zxcvbn, zxcvbnOptions } from '@zxcvbn-ts/core';
 import * as zxcvbnCommon from '@zxcvbn-ts/language-common';
 import * as zxcvbnEn from '@zxcvbn-ts/language-en';
@@ -61,17 +62,19 @@ function getCharBreakdown(password: string) {
 }
 
 export function GeneratedPassword({ password, entropyBits, onRegenerate }: GeneratedPasswordProps) {
-  const [copied, setCopied] = useState(false);
   const [visible, setVisible] = useState(false);
 
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(password);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
+      toast.success('Password copied to clipboard');
+    } catch {
+      toast.error('Failed to copy — please select and copy manually');
     }
+  };
+
+  const handleInputClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    e.currentTarget.select();
   };
 
   const [zxcvbnScore, setZxcvbnScore] = useState<number | null>(null);
@@ -138,7 +141,8 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
           <Input
             value={password}
             readOnly
-            className="font-mono text-sm bg-slate-900 border-slate-600 text-white"
+            onClick={handleInputClick}
+            className="font-mono text-sm bg-slate-900 border-slate-600 text-white cursor-pointer"
             type={visible ? 'text' : 'password'}
           />
           <Button
@@ -164,12 +168,9 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
             variant="outline"
             size="icon"
             className="flex-shrink-0"
+            title="Copy to clipboard"
           >
-            {copied ? (
-              <CheckCircle className="w-4 h-4 text-green-600" />
-            ) : (
-              <Copy className="w-4 h-4" />
-            )}
+            <Copy className="w-4 h-4" />
           </Button>
         </div>
 

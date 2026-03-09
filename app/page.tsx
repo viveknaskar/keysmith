@@ -7,6 +7,7 @@ import { DrawingCanvas } from '@/components/DrawingCanvas';
 import { PasswordConfig } from '@/components/PasswordConfig';
 import { GeneratedPassword } from '@/components/GeneratedPassword';
 import { PasswordStrengthTester } from '@/components/PasswordStrengthTester';
+import { PasswordHistory, HistoryEntry } from '@/components/PasswordHistory';
 
 export default function Home() {
   const [entropyLevel, setEntropyLevel] = useState<'weak' | 'moderate' | 'strong'>('weak');
@@ -14,6 +15,8 @@ export default function Home() {
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [passwordEntropyBits, setPasswordEntropyBits] = useState(0);
   const [regenerateTrigger, setRegenerateTrigger] = useState(0);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const historyIdRef = { current: 0 };
 
   // Calculate entropy level based on canvas data
   useEffect(() => {
@@ -27,7 +30,7 @@ export default function Home() {
   }, [canvasEntropy]);
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-slate-900 dark:bg-slate-900 light:bg-slate-100">
       <div className="max-w-6xl mx-auto px-4 py-8">
         <Header />
         
@@ -41,10 +44,15 @@ export default function Home() {
           
           <PasswordConfig
             canvasEntropy={canvasEntropy}
+            hasDrawnEntropy={canvasEntropy.length > 0}
             regenerateTrigger={regenerateTrigger}
             onPasswordGenerated={(pw, bits) => {
               setGeneratedPassword(pw);
               setPasswordEntropyBits(bits);
+              setHistory(h => [
+                { id: historyIdRef.current++, password: pw, entropyBits: bits, createdAt: new Date() },
+                ...h,
+              ].slice(0, 10));
             }}
           />
 
@@ -54,6 +62,8 @@ export default function Home() {
             onRegenerate={() => setRegenerateTrigger(t => t + 1)}
           />
           
+          <PasswordHistory entries={history} onClear={() => setHistory([])} />
+
           <PasswordStrengthTester />
         </div>
       </div>
