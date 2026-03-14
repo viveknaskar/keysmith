@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Zap, AlertTriangle } from 'lucide-react';
 import { wordlists } from 'bip39';
 const wordlist = wordlists['english'];
 
@@ -49,41 +48,34 @@ export function PasswordConfig({ canvasEntropy, hasDrawnEntropy, regenerateTrigg
   const generatePassphrase = async () => {
     setIsGenerating(true);
     try {
-    const count = wordCount[0];
-    // Entropy: log2(2048) * count = 11 bits per word
-    const entropyBits = 11 * count;
-
-    // Collect entropy for mixing
-    const timingEntropy = `${Date.now()}:${performance.now()}`;
-    const canvasEntropyStr = canvasEntropy.join(',');
-    const nonce = crypto.randomUUID();
-    const ikm = await crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode([timingEntropy, canvasEntropyStr, nonce].join('|')),
-      { name: 'HKDF' },
-      false,
-      ['deriveBits'],
-    );
-    const derived = await crypto.subtle.deriveBits(
-      { name: 'HKDF', hash: 'SHA-256', salt: new TextEncoder().encode('entropypass-v1'), info: new Uint8Array() },
-      ikm,
-      256,
-    );
-    const hashBytes = new Uint8Array(derived);
-
-    // Pick words using crypto.getRandomValues + rejection sampling
-    // wordlist has 2048 entries — fits in 11 bits, use Uint16 (max 65536), reject >= 63488 (63488 = 31 * 2048)
-    const words: string[] = [];
-    while (words.length < count) {
-      const buf = new Uint16Array(count * 4);
-      crypto.getRandomValues(buf);
-      for (let i = 0; i < buf.length && words.length < count; i++) {
-        buf[i] ^= (hashBytes[i % 32] << 8) | hashBytes[(i + 1) % 32];
-        const maxValid = 65536 - (65536 % 2048);
-        if (buf[i] < maxValid) words.push(wordlist[buf[i] % 2048]);
+      const count = wordCount[0];
+      const entropyBits = 11 * count;
+      const timingEntropy = `${Date.now()}:${performance.now()}`;
+      const canvasEntropyStr = canvasEntropy.join(',');
+      const nonce = crypto.randomUUID();
+      const ikm = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode([timingEntropy, canvasEntropyStr, nonce].join('|')),
+        { name: 'HKDF' },
+        false,
+        ['deriveBits'],
+      );
+      const derived = await crypto.subtle.deriveBits(
+        { name: 'HKDF', hash: 'SHA-256', salt: new TextEncoder().encode('entropypass-v1'), info: new Uint8Array() },
+        ikm,
+        256,
+      );
+      const hashBytes = new Uint8Array(derived);
+      const words: string[] = [];
+      while (words.length < count) {
+        const buf = new Uint16Array(count * 4);
+        crypto.getRandomValues(buf);
+        for (let i = 0; i < buf.length && words.length < count; i++) {
+          buf[i] ^= (hashBytes[i % 32] << 8) | hashBytes[(i + 1) % 32];
+          const maxValid = 65536 - (65536 % 2048);
+          if (buf[i] < maxValid) words.push(wordlist[buf[i] % 2048]);
+        }
       }
-    }
-
       onPasswordGenerated(words.join(separator), entropyBits);
     } finally {
       setIsGenerating(false);
@@ -108,96 +100,76 @@ export function PasswordConfig({ canvasEntropy, hasDrawnEntropy, regenerateTrigg
   const generatePassword = async () => {
     setIsGenerating(true);
     try {
-    const parts: { chars: string; enabled: boolean }[] = [
-      { chars: filterAmbiguous(LOWERCASE), enabled: options.lowercase },
-      { chars: filterAmbiguous(UPPERCASE), enabled: options.uppercase },
-      { chars: filterAmbiguous(NUMBERS),   enabled: options.numbers },
-      { chars: SPECIAL,                    enabled: options.special },
-    ];
-
-    const enabledParts = parts.filter(p => p.enabled && p.chars.length > 0);
-    if (enabledParts.length === 0) {
-      alert('Please select at least one character type');
-      return;
-    }
-
-    const charset = enabledParts.map(p => p.chars).join('');
-    const length = passwordLength[0];
-    const entropyBits = Math.log2(charset.length) * length;
-
-    // 1. Collect all entropy sources (including passive device info)
-    const timingEntropy = `${Date.now()}:${performance.now()}`;
-    const weatherEntropy = await getWeatherEntropy();
-    const canvasEntropyStr = canvasEntropy.join(',');
-    const nonce = crypto.randomUUID();
-    const deviceEntropy = [
-      screen.width, screen.height, screen.colorDepth,
-      navigator.hardwareConcurrency ?? 0,
-      (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 0,
-      navigator.language,
-      Intl.DateTimeFormat().resolvedOptions().timeZone,
-    ].join(':');
-
-    const entropyString = [timingEntropy, weatherEntropy, canvasEntropyStr, nonce, deviceEntropy].join('|');
-
-    // 2. HKDF: import entropy as raw key material, then derive bytes
-    const ikm = await crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode(entropyString),
-      { name: 'HKDF' },
-      false,
-      ['deriveBits'],
-    );
-    const derived = await crypto.subtle.deriveBits(
-      { name: 'HKDF', hash: 'SHA-256', salt: new TextEncoder().encode('entropypass-v1'), info: new Uint8Array() },
-      ikm,
-      256,
-    );
-    const hkdfBytes = new Uint8Array(derived);
-    const hashBytes = hkdfBytes; // alias used by pickChar closure
-
-    // 3. Generate cryptographically secure random bytes
-    const randomBytes = new Uint8Array(length * 8);
-    crypto.getRandomValues(randomBytes);
-
-    // 4. XOR CSPRNG output with HKDF-derived bytes to bind user entropy
-    for (let i = 0; i < randomBytes.length; i++) {
-      randomBytes[i] ^= hkdfBytes[i % 32];
-    }
-
-    // Helper: pick one char from a charset using rejection sampling
-    let byteIdx = 0;
-    const pickChar = (cs: string): string => {
-      const maxValid = 256 - (256 % cs.length);
-      while (true) {
-        if (byteIdx >= randomBytes.length) {
-          crypto.getRandomValues(randomBytes);
-          for (let i = 0; i < randomBytes.length; i++) randomBytes[i] ^= hashBytes[i % 32];
-          byteIdx = 0;
-        }
-        const byte = randomBytes[byteIdx++];
-        if (byte < maxValid) return cs[byte % cs.length];
+      const parts: { chars: string; enabled: boolean }[] = [
+        { chars: filterAmbiguous(LOWERCASE), enabled: options.lowercase },
+        { chars: filterAmbiguous(UPPERCASE), enabled: options.uppercase },
+        { chars: filterAmbiguous(NUMBERS),   enabled: options.numbers },
+        { chars: SPECIAL,                    enabled: options.special },
+      ];
+      const enabledParts = parts.filter(p => p.enabled && p.chars.length > 0);
+      if (enabledParts.length === 0) {
+        alert('Please select at least one character type');
+        return;
       }
-    };
-
-    // 5. Generate base password (length - enabledParts.length chars) from full charset
-    const mandatoryCount = Math.min(enabledParts.length, length);
-    const baseCount = length - mandatoryCount;
-    const base: string[] = [];
-    for (let i = 0; i < baseCount; i++) base.push(pickChar(charset));
-
-    // 6. Pick one mandatory char per enabled type
-    const mandatory: string[] = enabledParts.map(p => pickChar(p.chars));
-
-    // 7. Fisher-Yates shuffle of the combined array using crypto random values
-    const combined = [...base, ...mandatory];
-    const shuffleBytes = new Uint32Array(combined.length);
-    crypto.getRandomValues(shuffleBytes);
-    for (let i = combined.length - 1; i > 0; i--) {
-      const j = shuffleBytes[i] % (i + 1);
-      [combined[i], combined[j]] = [combined[j], combined[i]];
-    }
-
+      const charset = enabledParts.map(p => p.chars).join('');
+      const length = passwordLength[0];
+      const entropyBits = Math.log2(charset.length) * length;
+      const timingEntropy = `${Date.now()}:${performance.now()}`;
+      const weatherEntropy = await getWeatherEntropy();
+      const canvasEntropyStr = canvasEntropy.join(',');
+      const nonce = crypto.randomUUID();
+      const deviceEntropy = [
+        screen.width, screen.height, screen.colorDepth,
+        navigator.hardwareConcurrency ?? 0,
+        (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 0,
+        navigator.language,
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+      ].join(':');
+      const entropyString = [timingEntropy, weatherEntropy, canvasEntropyStr, nonce, deviceEntropy].join('|');
+      const ikm = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(entropyString),
+        { name: 'HKDF' },
+        false,
+        ['deriveBits'],
+      );
+      const derived = await crypto.subtle.deriveBits(
+        { name: 'HKDF', hash: 'SHA-256', salt: new TextEncoder().encode('entropypass-v1'), info: new Uint8Array() },
+        ikm,
+        256,
+      );
+      const hkdfBytes = new Uint8Array(derived);
+      const hashBytes = hkdfBytes;
+      const randomBytes = new Uint8Array(length * 8);
+      crypto.getRandomValues(randomBytes);
+      for (let i = 0; i < randomBytes.length; i++) {
+        randomBytes[i] ^= hkdfBytes[i % 32];
+      }
+      let byteIdx = 0;
+      const pickChar = (cs: string): string => {
+        const maxValid = 256 - (256 % cs.length);
+        while (true) {
+          if (byteIdx >= randomBytes.length) {
+            crypto.getRandomValues(randomBytes);
+            for (let i = 0; i < randomBytes.length; i++) randomBytes[i] ^= hashBytes[i % 32];
+            byteIdx = 0;
+          }
+          const byte = randomBytes[byteIdx++];
+          if (byte < maxValid) return cs[byte % cs.length];
+        }
+      };
+      const mandatoryCount = Math.min(enabledParts.length, length);
+      const baseCount = length - mandatoryCount;
+      const base: string[] = [];
+      for (let i = 0; i < baseCount; i++) base.push(pickChar(charset));
+      const mandatory: string[] = enabledParts.map(p => pickChar(p.chars));
+      const combined = [...base, ...mandatory];
+      const shuffleBytes = new Uint32Array(combined.length);
+      crypto.getRandomValues(shuffleBytes);
+      for (let i = combined.length - 1; i > 0; i--) {
+        const j = shuffleBytes[i] % (i + 1);
+        [combined[i], combined[j]] = [combined[j], combined[i]];
+      }
       onPasswordGenerated(combined.join(''), entropyBits);
     } finally {
       setIsGenerating(false);
@@ -205,152 +177,217 @@ export function PasswordConfig({ canvasEntropy, hasDrawnEntropy, regenerateTrigg
   };
 
   return (
-    <Card className="bg-slate-800 border border-slate-700">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold text-white">
-          Password Configuration
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div
+      className="rounded-xl overflow-hidden"
+      style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}
+    >
+      <div className="px-6 pt-5 pb-3">
+        <h2 className="text-base font-semibold text-white">Password Configuration</h2>
+      </div>
+
+      <div className="px-6 pb-6">
         <Tabs value={mode} onValueChange={v => setMode(v as 'password' | 'passphrase')}>
-          <TabsList className="bg-slate-700 w-full">
-            <TabsTrigger value="password" className="flex-1">Random Password</TabsTrigger>
-            <TabsTrigger value="passphrase" className="flex-1">Passphrase</TabsTrigger>
+          {/* Tab list */}
+          <TabsList
+            className="w-full mb-6 p-1 rounded-lg h-auto gap-1"
+            style={{ background: '#111', border: '1px solid #1a1a1a' }}
+          >
+            <TabsTrigger
+              value="password"
+              className="flex-1 text-sm rounded-md py-2 data-[state=active]:text-white data-[state=active]:shadow-none transition-all"
+              style={{}}
+            >
+              Random Password
+            </TabsTrigger>
+            <TabsTrigger
+              value="passphrase"
+              className="flex-1 text-sm rounded-md py-2 data-[state=active]:text-white data-[state=active]:shadow-none transition-all"
+            >
+              Passphrase
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="passphrase" className="space-y-4 pt-2">
-            <div className="space-y-2">
+          {/* ── Password tab ── */}
+          <TabsContent value="password" className="space-y-6 mt-0">
+            {/* Length slider */}
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium text-slate-300">Number of Words</Label>
-                <span className="text-sm text-slate-400 font-mono">{wordCount[0]}</span>
+                <Label className="text-sm text-zinc-400">Password Length</Label>
+                <span
+                  className="text-sm font-mono px-2 py-0.5 rounded"
+                  style={{ background: '#111', color: '#00d4ff', border: '1px solid #1a1a1a' }}
+                >
+                  {passwordLength[0]}
+                </span>
               </div>
-              <Slider value={wordCount} onValueChange={setWordCount} min={3} max={10} step={1} className="w-full" />
+              <Slider
+                value={passwordLength}
+                onValueChange={setPasswordLength}
+                min={8}
+                max={64}
+                step={1}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-zinc-700">
+                <span>8</span>
+                <span>64</span>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Label className="text-sm text-slate-300 shrink-0">Separator</Label>
-              <Select value={separator} onValueChange={setSeparator}>
-                <SelectTrigger className="bg-slate-900 border-slate-600 text-white w-36">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700 text-white">
-                  <SelectItem value="-">Hyphen  (word-word)</SelectItem>
-                  <SelectItem value=" ">Space   (word word)</SelectItem>
-                  <SelectItem value=".">Dot     (word.word)</SelectItem>
-                  <SelectItem value="_">Underscore (word_word)</SelectItem>
-                  <SelectItem value="">None    (wordword)</SelectItem>
-                </SelectContent>
-              </Select>
+
+            {/* Character options */}
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { id: 'lowercase', label: 'Lowercase', sub: 'a–z', key: 'lowercase' as const },
+                { id: 'uppercase', label: 'Uppercase', sub: 'A–Z', key: 'uppercase' as const },
+                { id: 'numbers',   label: 'Numbers',   sub: '0–9', key: 'numbers' as const },
+                { id: 'special',   label: 'Symbols',   sub: '!@#…', key: 'special' as const },
+              ].map(({ id, label, sub, key }) => (
+                <div
+                  key={id}
+                  className="flex items-center justify-between p-3 rounded-lg cursor-pointer"
+                  style={{
+                    background: options[key] ? 'rgba(0,212,255,0.04)' : '#0d0d0d',
+                    border: `1px solid ${options[key] ? 'rgba(0,212,255,0.15)' : '#1a1a1a'}`,
+                  }}
+                  onClick={() => setOptions(prev => ({ ...prev, [key]: !prev[key] }))}
+                >
+                  <div>
+                    <div className="text-sm font-medium text-white">{label}</div>
+                    <div className="text-xs text-zinc-600 font-mono">{sub}</div>
+                  </div>
+                  <Switch
+                    id={id}
+                    checked={options[key]}
+                    onCheckedChange={(checked) => setOptions(prev => ({ ...prev, [key]: checked }))}
+                    onClick={e => e.stopPropagation()}
+                  />
+                </div>
+              ))}
             </div>
-            <p className="text-xs text-slate-400">
-              {wordCount[0]} words &times; 11 bits = <span className="text-white font-medium">{wordCount[0] * 11} bits</span> of entropy (BIP39 wordlist, 2048 words)
-            </p>
-            <Button onClick={generatePassphrase} disabled={isGenerating} className="w-full bg-blue-600 hover:bg-blue-500 text-white">
-              {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating…</> : 'Generate Passphrase'}
+
+            {/* Exclude ambiguous */}
+            <div
+              className="flex items-center justify-between p-3 rounded-lg cursor-pointer"
+              style={{
+                background: options.excludeAmbiguous ? 'rgba(245,158,11,0.04)' : '#0d0d0d',
+                border: `1px solid ${options.excludeAmbiguous ? 'rgba(245,158,11,0.2)' : '#1a1a1a'}`,
+              }}
+              onClick={() => setOptions(prev => ({ ...prev, excludeAmbiguous: !prev.excludeAmbiguous }))}
+            >
+              <div>
+                <div className="text-sm font-medium text-white">Exclude ambiguous characters</div>
+                <div className="text-xs text-zinc-600 font-mono">0, O, l, 1, I</div>
+              </div>
+              <Switch
+                id="excludeAmbiguous"
+                checked={options.excludeAmbiguous}
+                onCheckedChange={(checked) => setOptions(prev => ({ ...prev, excludeAmbiguous: checked }))}
+                onClick={e => e.stopPropagation()}
+              />
+            </div>
+
+            {/* Warning */}
+            {!hasDrawnEntropy && (
+              <div
+                className="flex items-start gap-2.5 rounded-lg px-3 py-2.5"
+                style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.15)' }}
+              >
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-600">
+                  Drawing on the canvas adds personal entropy to your password. You can still generate without it.
+                </p>
+              </div>
+            )}
+
+            <Button
+              onClick={generatePassword}
+              disabled={isGenerating}
+              className="w-full h-11 text-sm font-semibold transition-all"
+              style={{
+                background: isGenerating ? '#111' : 'linear-gradient(135deg, #00d4ff, #0ea5e9)',
+                color: isGenerating ? '#555' : '#000',
+                border: 'none',
+                boxShadow: isGenerating ? 'none' : '0 0 20px rgba(0,212,255,0.2)',
+              }}
+            >
+              {isGenerating
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating…</>
+                : <><Zap className="w-4 h-4 mr-2" />Generate Secure Password</>
+              }
             </Button>
           </TabsContent>
 
-          <TabsContent value="password" className="space-y-6 pt-2">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium text-slate-300">
-              Password Length
-            </Label>
-            <span className="text-sm text-slate-400 font-mono">
-              {passwordLength[0]}
-            </span>
-          </div>
-          <Slider
-            value={passwordLength}
-            onValueChange={setPasswordLength}
-            min={8}
-            max={64}
-            step={1}
-            className="w-full"
-          />
-        </div>
+          {/* ── Passphrase tab ── */}
+          <TabsContent value="passphrase" className="space-y-6 mt-0">
+            {/* Word count */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm text-zinc-400">Number of Words</Label>
+                <span
+                  className="text-sm font-mono px-2 py-0.5 rounded"
+                  style={{ background: '#111', color: '#00d4ff', border: '1px solid #1a1a1a' }}
+                >
+                  {wordCount[0]}
+                </span>
+              </div>
+              <Slider value={wordCount} onValueChange={setWordCount} min={3} max={10} step={1} className="w-full" />
+              <div className="flex justify-between text-xs text-zinc-700">
+                <span>3</span>
+                <span>10</span>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="lowercase"
-              checked={options.lowercase}
-              onCheckedChange={(checked) =>
-                setOptions(prev => ({ ...prev, lowercase: checked }))
+            {/* Separator */}
+            <div className="flex items-center gap-3">
+              <Label className="text-sm text-zinc-400 shrink-0">Word Separator</Label>
+              <Select value={separator} onValueChange={setSeparator}>
+                <SelectTrigger
+                  className="flex-1 h-9 text-sm"
+                  style={{ background: '#111', border: '1px solid #1a1a1a', color: '#fff' }}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent style={{ background: '#111', border: '1px solid #222', color: '#fff' }}>
+                  <SelectItem value="-">Hyphen — word-word</SelectItem>
+                  <SelectItem value=" ">Space — word word</SelectItem>
+                  <SelectItem value=".">Dot — word.word</SelectItem>
+                  <SelectItem value="_">Underscore — word_word</SelectItem>
+                  <SelectItem value="">None — wordword</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Entropy info */}
+            <div
+              className="rounded-lg px-4 py-3 flex items-center justify-between"
+              style={{ background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.1)' }}
+            >
+              <span className="text-xs text-zinc-500">Estimated entropy</span>
+              <span className="text-sm font-mono" style={{ color: '#00d4ff' }}>
+                {wordCount[0] * 11} bits
+                <span className="text-xs text-zinc-600 ml-1.5">({wordCount[0]} × 11 bits / BIP39)</span>
+              </span>
+            </div>
+
+            <Button
+              onClick={generatePassphrase}
+              disabled={isGenerating}
+              className="w-full h-11 text-sm font-semibold transition-all"
+              style={{
+                background: isGenerating ? '#111' : 'linear-gradient(135deg, #7c3aed, #9333ea)',
+                color: isGenerating ? '#555' : '#fff',
+                border: 'none',
+                boxShadow: isGenerating ? 'none' : '0 0 20px rgba(124,58,237,0.25)',
+              }}
+            >
+              {isGenerating
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating…</>
+                : <><Zap className="w-4 h-4 mr-2" />Generate Passphrase</>
               }
-            />
-            <Label htmlFor="lowercase" className="text-sm text-slate-300">
-              Lowercase (a-z)
-            </Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="uppercase"
-              checked={options.uppercase}
-              onCheckedChange={(checked) =>
-                setOptions(prev => ({ ...prev, uppercase: checked }))
-              }
-            />
-            <Label htmlFor="uppercase" className="text-sm text-slate-300">
-              Uppercase (A-Z)
-            </Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="numbers"
-              checked={options.numbers}
-              onCheckedChange={(checked) =>
-                setOptions(prev => ({ ...prev, numbers: checked }))
-              }
-            />
-            <Label htmlFor="numbers" className="text-sm text-slate-300">
-              Numbers (0-9)
-            </Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="special"
-              checked={options.special}
-              onCheckedChange={(checked) =>
-                setOptions(prev => ({ ...prev, special: checked }))
-              }
-            />
-            <Label htmlFor="special" className="text-sm text-slate-300">
-              Special Characters
-            </Label>
-          </div>
-
-          <div className="flex items-center space-x-2 col-span-2">
-            <Switch
-              id="excludeAmbiguous"
-              checked={options.excludeAmbiguous}
-              onCheckedChange={(checked) =>
-                setOptions(prev => ({ ...prev, excludeAmbiguous: checked }))
-              }
-            />
-            <Label htmlFor="excludeAmbiguous" className="text-sm text-slate-300">
-              Exclude ambiguous characters (0, O, l, 1, I)
-            </Label>
-          </div>
-        </div>
-
-        {!hasDrawnEntropy && (
-          <p className="text-xs text-yellow-400 bg-yellow-900/20 border border-yellow-800 rounded-md px-3 py-2">
-            Drawing on the canvas above adds personal entropy to your password. You can still generate without it.
-          </p>
-        )}
-        <Button
-          onClick={generatePassword}
-          disabled={isGenerating}
-          className="w-full bg-blue-600 hover:bg-blue-500 text-white"
-        >
-          {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating…</> : 'Generate Secure Password'}
-        </Button>
+            </Button>
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

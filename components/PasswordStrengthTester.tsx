@@ -1,52 +1,59 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { CheckCircle, ExternalLink } from 'lucide-react';
+import { ExternalLink, CheckCircle2 } from 'lucide-react';
+
+const features = [
+  'Password complexity & entropy analysis',
+  'Dictionary & pattern attack resistance',
+  'Time-to-crack estimates',
+  'Common substitution detection',
+];
 
 export function PasswordStrengthTester() {
-  const features = [
-    'Password complexity & entropy',
-    'Dictionary attack resistance',
-    'Time-to-crack estimates',
-    'Common pattern detection'
-  ];
-
   return (
-    <Card className="bg-slate-800 border border-slate-700">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold text-white">
-          Test Your Password Strength
-        </CardTitle>
-        <p className="text-sm text-slate-300">
-          Want to verify your password strength? Use Bitwarden's security analysis tool 
-          to test entropy, resistance to attacks, and complexity.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          {features.map((feature, index) => (
-            <div key={index} className="flex items-center space-x-2">
-              <CheckCircle className="w-4 h-4 text-green-400" />
-              <span className="text-sm text-slate-300">{feature}</span>
-            </div>
-          ))}
+    <div
+      className="rounded-xl p-6"
+      style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}
+    >
+      <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+        <div className="flex-1">
+          <h2 className="text-base font-semibold text-white mb-1.5">Verify with an External Tool</h2>
+          <p className="text-sm text-zinc-500 mb-4">
+            Use Bitwarden's security analysis to independently verify your password strength.
+          </p>
+          <ul className="space-y-2">
+            {features.map((f, i) => (
+              <li key={i} className="flex items-center gap-2.5 text-sm text-zinc-500">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: '#22c55e' }} />
+                {f}
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <Button 
-          variant="outline"
-          className="w-full"
-          asChild
-        >
-          <a 
+        <div className="shrink-0">
+          <a
             href="https://bitwarden.com/password-strength/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all"
+            style={{
+              background: '#111',
+              border: '1px solid #222',
+              color: '#999',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = '#333';
+              (e.currentTarget as HTMLAnchorElement).style.color = '#fff';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = '#222';
+              (e.currentTarget as HTMLAnchorElement).style.color = '#999';
+            }}
           >
-            Analyze with Bitwarden
-            <ExternalLink className="w-4 h-4" />
+            Open Bitwarden
+            <ExternalLink className="w-3.5 h-3.5" />
           </a>
-        </Button>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 }

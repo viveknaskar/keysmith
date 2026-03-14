@@ -4,7 +4,7 @@ import { Inter } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
   title: 'EntropyPass — Smart Passwords from Real-World Entropy',
@@ -17,11 +17,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <body className={`${inter.variable} font-sans antialiased`} style={{ background: '#050505' }}>
+        <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark">
           {children}
-          <Toaster position="bottom-center" theme="dark" richColors />
+          <Toaster
+            position="bottom-center"
+            theme="dark"
+            richColors
+            toastOptions={{
+              style: {
+                background: '#111',
+                border: '1px solid #222',
+                color: '#fff',
+              },
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>
