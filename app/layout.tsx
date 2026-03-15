@@ -9,6 +9,10 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 export const metadata: Metadata = {
   title: 'EntropyPass — Smart Passwords from Real-World Entropy',
   description: 'Generate secure, high-entropy passwords using canvas drawing, device timing, and live weather data.',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

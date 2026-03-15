@@ -32,12 +32,12 @@ Nothing is sent to a server. Nothing is stored. Everything runs in the browser.
 
 ## Features
 
-- **Two generation modes** — random password (8–64 chars) or BIP39 passphrase (3–10 words)
-- **Canvas entropy collection** — draws directly contribute to the key material
-- **Configurable character sets** — lowercase, uppercase, numbers, symbols, optional ambiguous-char exclusion
-- **Real-time strength analysis** — entropy bits, crack-time estimate at 1T guesses/sec, and zxcvbn pattern detection
-- **Session history** — last 10 passwords, masked, in-memory only (cleared on tab close)
-- **Static export** — deploys as plain HTML/CSS/JS to any host
+- **Two generation modes** : random password (8–64 chars) or BIP39 passphrase (3–10 words)
+- **Canvas entropy collection** : draws directly contribute to the key material
+- **Configurable character sets** : lowercase, uppercase, numbers, symbols, optional ambiguous-char exclusion
+- **Real-time strength analysis** : entropy bits, crack-time estimate at 1T guesses/sec, and zxcvbn pattern detection
+- **Session history** : last 10 passwords, masked, in-memory only (cleared on tab close)
+- **Static export** : deploys as plain HTML/CSS/JS to any host
 
 ---
 
