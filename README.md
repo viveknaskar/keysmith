@@ -1,144 +1,106 @@
 # EntropyPass
 
-**Smart Passwords from Real-World Entropy**
-
-EntropyPass is a modern, secure password generator that creates high-entropy passwords using multiple sources of real-world randomness including drawing input, device timing, and environmental data.
-
-## ✨ Features
-
-### 🎨 Canvas Entropy
-- Interactive drawing canvas that captures user input as entropy
-- Mouse movements, timing, and drawing patterns contribute to password randomness
-- Visual feedback showing entropy level (Weak, Moderate, Strong)
-
-### ☁️ Weather Integration
-- Incorporates live weather data as an additional entropy source
-- Adds external randomness that's impossible to predict or replicate
-- Fallback to secure random generation if weather API is unavailable
-
-### 🔒 Secure Generation
-- Multiple entropy sources combined using cryptographic principles
-- SHA-256 hashing for secure password derivation
-- Configurable password length (8-64 characters)
-- Support for lowercase, uppercase, numbers, and special characters
-
-### 🌙 Dark Mode Design
-- Modern, sleek dark theme optimized for security applications
-- Professional typography and spacing
-- Responsive design that works on all devices
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn package manager
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd entropypass
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Run the development server:
-```bash
-npm run dev
-```
-
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-### Building for Production
-
-```bash
-npm run build
-```
-
-The app will be built as a static export in the `out` directory, ready for deployment to any static hosting service.
-
-## 🛠️ Technology Stack
-
-- **Framework**: Next.js 13 with App Router
-- **Styling**: Tailwind CSS
-- **UI Components**: shadcn/ui
-- **Icons**: Lucide React
-- **Language**: TypeScript
-- **Build**: Static export for universal deployment
-
-## 📱 Usage
-
-1. **Draw for Entropy**: Use the drawing canvas to create random patterns. Your mouse movements and timing add unpredictable entropy to the password generation process.
-
-2. **Configure Password**: 
-   - Adjust password length using the slider (8-64 characters)
-   - Toggle character types: lowercase, uppercase, numbers, special characters
-   - At least one character type must be selected
-
-3. **Generate Password**: Click "Generate Secure Password" to create a new password using all available entropy sources.
-
-4. **Copy & Use**: Copy the generated password to your clipboard and use it for your accounts.
-
-5. **Test Strength**: Use the integrated Bitwarden password strength analyzer to verify your password's security.
-
-## 🔐 Security Features
-
-- **Multiple Entropy Sources**: Combines user input, timing data, and environmental factors
-- **No Server Dependencies**: All generation happens client-side for maximum security
-- **No Password Storage**: Passwords are never stored or transmitted
-- **Cryptographic Hashing**: Uses industry-standard SHA-256 for entropy mixing
-- **Real-time Strength Analysis**: Visual feedback on password and entropy strength
-
-## 🎨 Design Philosophy
-
-EntropyPass follows a security-first design approach:
-
-- **Trust-focused**: Clean, professional appearance that inspires confidence
-- **Minimalist**: Removes distractions to focus on security
-- **Accessible**: High contrast, readable typography, and intuitive interactions
-- **Responsive**: Works seamlessly across desktop, tablet, and mobile devices
-
-## 🚀 Deployment
-
-The app is configured for static export and can be deployed to:
-
-- **Netlify**: Drag and drop the `out` folder
-- **Vercel**: Connect your repository for automatic deployments
-- **GitHub Pages**: Upload the `out` folder contents
-- **Any static hosting**: The build output is pure HTML/CSS/JS
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🔗 Links
-
-- [Live Demo](https://entropypass.netlify.app) (if deployed)
-- [Bitwarden Password Strength Tester](https://bitwarden.com/password-strength/)
-- [shadcn/ui Documentation](https://ui.shadcn.com/)
-- [Next.js Documentation](https://nextjs.org/docs)
-
-## ⚠️ Security Notice
-
-While EntropyPass uses multiple entropy sources and follows security best practices, remember:
-
-- Use unique passwords for every account
-- Store passwords in a reputable password manager
-- Enable two-factor authentication when available
-- Regularly update passwords for sensitive accounts
+ Generate secure, high-entropy passwords using real-world randomness, canvas drawing, device timing, and live weather data.
 
 ---
 
-**Built with ❤️ for better password security**
+## How it works
+
+Most password generators rely solely on a PRNG seeded with a single entropy source. EntropyPass combines **four independent sources** and mixes them cryptographically before any character is picked:
+
+| Source | What's captured |
+|---|---|
+| Canvas drawing | x/y coordinates + sub-millisecond timestamps per point |
+| Device timing | `Date.now()` and `performance.now()` at generation time |
+| Live weather | Temperature, wind speed, and weather code from Open-Meteo |
+| Device fingerprint | Screen dimensions, hardware concurrency, language, timezone |
+
+These are concatenated and passed through **HKDF (SHA-256)** to derive a 256-bit key, which is XORed with `crypto.getRandomValues()` output. Characters are selected using **rejection sampling** to guarantee an unbiased uniform distribution. A **Fisher-Yates shuffle** (also crypto-sourced) is applied as the final step.
+
+**Further reading:**
+
+- [Pseudorandom number generator — Wikipedia](https://en.wikipedia.org/wiki/Pseudorandom_number_generator) — overview of PRNGs, their limitations, and why cryptographically secure variants matter
+- [Cryptographically secure PRNG — Wikipedia](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator) — what makes a PRNG "cryptographically secure" and why `Math.random()` is not suitable for secrets
+- [Web Crypto API — MDN](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) — browser-native CSPRNG via `crypto.getRandomValues()` and `crypto.subtle`
+- [Fisher-Yates shuffle — Wikipedia](https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle) — the algorithm used to shuffle the final character array without bias
+- [HKDF — RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869) — the key derivation function used to mix all entropy sources into a single 256-bit value
+- [Modulo bias — explanation](https://research.kudelskisecurity.com/2020/07/28/the-definitive-guide-to-modulo-bias-and-how-to-avoid-it/) — why naïve `% charset.length` introduces skew and how rejection sampling fixes it
+
+Nothing is sent to a server. Nothing is stored. Everything runs in the browser.
+
+---
+
+## Features
+
+- **Two generation modes** — random password (8–64 chars) or BIP39 passphrase (3–10 words)
+- **Canvas entropy collection** — draws directly contribute to the key material
+- **Configurable character sets** — lowercase, uppercase, numbers, symbols, optional ambiguous-char exclusion
+- **Real-time strength analysis** — entropy bits, crack-time estimate at 1T guesses/sec, and zxcvbn pattern detection
+- **Session history** — last 10 passwords, masked, in-memory only (cleared on tab close)
+- **Static export** — deploys as plain HTML/CSS/JS to any host
+
+---
+
+## Tech stack
+
+| | |
+|---|---|
+| Framework | Next.js 16 (App Router, static export) |
+| Language | TypeScript |
+| Styling | Tailwind CSS + shadcn/ui (Radix UI) |
+| Crypto | Web Crypto API — `crypto.subtle.deriveBits`, `crypto.getRandomValues` |
+| Strength analysis | `@zxcvbn-ts/core` |
+| Passphrase wordlist | `bip39` (BIP39 English, 2048 words) |
+
+---
+
+## Getting started
+
+**Prerequisites:** Node.js 18+
+
+```bash
+# Install dependencies
+npm install
+
+# Start dev server
+npm run dev
+# → http://localhost:3000
+
+# Production build (outputs to /out)
+npm run build
+```
+
+---
+
+## Project structure
+
+```
+app/
+  layout.tsx          # Root layout, theme, toaster
+  page.tsx            # Main orchestrator
+  globals.css         # CSS variables + utilities
+components/
+  Header.tsx          # Hero section
+  FeatureOverview.tsx # Feature cards
+  DrawingCanvas.tsx   # Entropy collection canvas
+  PasswordConfig.tsx  # Generation settings + crypto logic
+  GeneratedPassword.tsx  # Output + strength analysis
+  PasswordHistory.tsx    # Session history
+  PasswordStrengthTester.tsx  # Bitwarden link
+  ui/                 # shadcn/ui primitives
+```
+
+---
+
+## Security notes
+
+- All cryptographic operations use the browser's native **Web Crypto API** — no third-party crypto libraries
+- Passwords exist only in React state; they are never written to `localStorage`, `sessionStorage`, IndexedDB, or sent over the network
+- The weather API call (`open-meteo.com`) is a GET request for public meteorological data — no credentials, no identifying info
+- Canvas entropy is entirely optional; the generator falls back to `crypto.getRandomValues()` if no drawing is provided
+
+---
+
+## License
+
+MIT
