@@ -25,6 +25,33 @@ To turn raw random bytes into characters without skewing the distribution:
 
 ---
 
+## Why a CSPRNG?
+
+**CSPRNG** stands for **Cryptographically Secure Pseudo-Random Number Generator**. It's the kind of randomness you must use whenever you generate a *secret* — passwords, encryption keys, tokens, session IDs.
+
+- **Pseudo-Random** — a computer can't conjure true randomness from arithmetic alone, so it expands a hidden internal seed into a stream of numbers that *look* random.
+- **Cryptographically Secure** — the defining extra guarantee: even after observing many outputs, an attacker **cannot predict the next value or reconstruct previous ones**. The internal state is seeded from genuine hardware entropy (timing jitter, electrical noise, the OS entropy pool).
+
+In the browser this is exposed as **`crypto.getRandomValues()`** (part of the [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)). It's the same class of generator that backs TLS and password managers, and EntropyPass uses it for every single character.
+
+### Why not `Math.random()`?
+
+`Math.random()` is a **regular**, non-cryptographic PRNG. It's perfectly fine for shuffling a game deck or picking a random animation delay — but it is **unsafe for secrets**:
+
+| | `Math.random()` | `crypto.getRandomValues()` |
+|---|---|---|
+| Predictable from outputs? | **Yes** | No |
+| Seed | Small, sometimes guessable | Large, hardware-sourced |
+| Designed for secrets? | **No** | Yes |
+
+Most engines implement `Math.random()` with an algorithm such as **xorshift128+**. By observing only a handful of its outputs, researchers have shown you can recover its internal state and then **compute every value it will ever produce** — which, for a password generator, means an attacker could reproduce your "random" password. A CSPRNG is specifically designed so that this is computationally infeasible.
+
+**Rule of thumb:** if the number needs to be a secret or unguessable, use a CSPRNG (`crypto.getRandomValues`) — never `Math.random()`.
+
+> EntropyPass uses **no** `Math.random()` anywhere in its generation path. Every byte comes from `crypto.getRandomValues()`.
+
+---
+
 ## Features
 
 - **Two generation modes** : random password (8–64 chars) or BIP39 passphrase (3–10 words)
