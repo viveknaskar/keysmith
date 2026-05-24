@@ -1,31 +1,31 @@
-import { PenTool, Cloud, Lock, Cpu } from 'lucide-react';
+import { Dices, Scale, ScanSearch, WifiOff } from 'lucide-react';
 
 const features = [
   {
-    icon: PenTool,
-    title: 'Canvas Entropy',
-    description: 'Your drawing patterns introduce unpredictable, human-sourced randomness.',
+    icon: Dices,
+    title: 'Browser CSPRNG',
+    description: 'Every character comes from crypto.getRandomValues — the browser\'s cryptographically secure RNG.',
     color: '#00d4ff',
     glow: 'rgba(0,212,255,0.12)',
   },
   {
-    icon: Cloud,
-    title: 'Weather Data',
-    description: 'Live atmospheric readings add real-world, external entropy to every password.',
+    icon: Scale,
+    title: 'Unbiased Selection',
+    description: 'Rejection sampling discards skewed values, so no character is more likely than any other.',
     color: '#7c3aed',
     glow: 'rgba(124,58,237,0.12)',
   },
   {
-    icon: Cpu,
-    title: 'Device Timing',
-    description: 'Sub-millisecond timing and hardware fingerprint data amplify unpredictability.',
+    icon: ScanSearch,
+    title: 'Strength Analysis',
+    description: 'Live entropy estimate and zxcvbn pattern detection score every password you generate.',
     color: '#22c55e',
     glow: 'rgba(34,197,94,0.12)',
   },
   {
-    icon: Lock,
-    title: 'HKDF SHA-256',
-    description: 'All entropy sources are cryptographically mixed via HKDF with SHA-256.',
+    icon: WifiOff,
+    title: '100% Client-Side',
+    description: 'No network requests, no analytics, no storage. Passwords never leave your browser tab.',
     color: '#f59e0b',
     glow: 'rgba(245,158,11,0.12)',
   },

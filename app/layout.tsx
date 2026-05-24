@@ -7,8 +7,8 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'EntropyPass — Smart Passwords from Real-World Entropy',
-  description: 'Generate secure, high-entropy passwords using canvas drawing, device timing, and live weather data.',
+  title: 'EntropyPass — Strong Passwords, Generated In Your Browser',
+  description: 'Generate strong, high-entropy passwords and passphrases entirely in your browser using the Web Crypto CSPRNG. No network requests, nothing stored.',
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',

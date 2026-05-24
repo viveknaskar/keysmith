@@ -34,8 +34,8 @@ export function Header() {
 
       {/* Tagline */}
       <p className="text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-        Generate secure, high-entropy passwords using real-world randomness &mdash;
-        your drawing, device timing, and live weather data.
+        Generate strong, high-entropy passwords and passphrases &mdash;
+        powered by your browser&rsquo;s cryptographically secure RNG.
       </p>
 
       {/* Sub-badge */}
@@ -50,7 +50,7 @@ export function Header() {
           className="w-1.5 h-1.5 rounded-full animate-pulse"
           style={{ background: '#00d4ff' }}
         />
-        100% client-side &middot; Zero data stored &middot; SHA-256 HKDF mixing
+        100% client-side &middot; Zero data stored &middot; No network requests
       </div>
     </header>
   );

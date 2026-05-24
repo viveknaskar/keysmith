@@ -1,32 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Header } from '@/components/Header';
 import { FeatureOverview } from '@/components/FeatureOverview';
-import { DrawingCanvas } from '@/components/DrawingCanvas';
 import { PasswordConfig } from '@/components/PasswordConfig';
 import { GeneratedPassword } from '@/components/GeneratedPassword';
 import { PasswordStrengthTester } from '@/components/PasswordStrengthTester';
 import { PasswordHistory, HistoryEntry } from '@/components/PasswordHistory';
 
 export default function Home() {
-  const [entropyLevel, setEntropyLevel] = useState<'weak' | 'moderate' | 'strong'>('weak');
-  const [canvasEntropy, setCanvasEntropy] = useState<number[]>([]);
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [passwordEntropyBits, setPasswordEntropyBits] = useState(0);
   const [regenerateTrigger, setRegenerateTrigger] = useState(0);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const historyIdRef = useRef(0);
-
-  useEffect(() => {
-    if (canvasEntropy.length === 0) {
-      setEntropyLevel('weak');
-    } else if (canvasEntropy.length < 120) {
-      setEntropyLevel('moderate');
-    } else {
-      setEntropyLevel('strong');
-    }
-  }, [canvasEntropy]);
 
   return (
     <div className="min-h-screen" style={{ background: '#050505' }}>
@@ -50,13 +37,7 @@ export default function Home() {
       <div className="relative max-w-5xl mx-auto px-4 py-10 space-y-8">
         <Header />
         <FeatureOverview />
-        <DrawingCanvas
-          entropyLevel={entropyLevel}
-          onEntropyChange={setCanvasEntropy}
-        />
         <PasswordConfig
-          canvasEntropy={canvasEntropy}
-          hasDrawnEntropy={canvasEntropy.length > 0}
           regenerateTrigger={regenerateTrigger}
           onPasswordGenerated={(pw, bits) => {
             setGeneratedPassword(pw);

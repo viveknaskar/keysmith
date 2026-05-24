@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Zap, AlertTriangle } from 'lucide-react';
+import { Loader2, Zap } from 'lucide-react';
 import { wordlists } from 'bip39';
 const wordlist = wordlists['english'];
 
@@ -17,26 +17,12 @@ const NUMBERS = '0123456789';
 const SPECIAL = '!@#$%^&*()_+-=[]{}|;:,.<>?';
 const AMBIGUOUS = new Set('0Ol1I');
 
-async function getWeatherEntropy(): Promise<string> {
-  try {
-    const response = await fetch(
-      'https://api.open-meteo.com/v1/forecast?latitude=51.51&longitude=-0.13&current=temperature_2m,wind_speed_10m,weather_code'
-    );
-    const data = await response.json();
-    return JSON.stringify(data.current);
-  } catch {
-    return '';
-  }
-}
-
 interface PasswordConfigProps {
-  canvasEntropy: number[];
-  hasDrawnEntropy: boolean;
   regenerateTrigger: number;
   onPasswordGenerated: (password: string, entropyBits: number) => void;
 }
 
-export function PasswordConfig({ canvasEntropy, hasDrawnEntropy, regenerateTrigger, onPasswordGenerated }: PasswordConfigProps) {
+export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: PasswordConfigProps) {
   const [mode, setMode] = useState<'password' | 'passphrase'>('password');
   const [passwordLength, setPasswordLength] = useState([16]);
   const [options, setOptions] = useState({
@@ -49,125 +35,87 @@ export function PasswordConfig({ canvasEntropy, hasDrawnEntropy, regenerateTrigg
   const [wordCount, setWordCount] = useState([5]);
   const [separator, setSeparator] = useState('-');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const generatePassphrase = useCallback(async () => {
+  const generatePassphrase = useCallback(() => {
     setIsGenerating(true);
     try {
       const count = wordCount[0];
       const entropyBits = 11 * count;
-      const timingEntropy = `${Date.now()}:${performance.now()}`;
-      const canvasEntropyStr = canvasEntropy.join(',');
-      const nonce = crypto.randomUUID();
-      const ikm = await crypto.subtle.importKey(
-        'raw',
-        new TextEncoder().encode([timingEntropy, canvasEntropyStr, nonce].join('|')),
-        { name: 'HKDF' },
-        false,
-        ['deriveBits'],
-      );
-      const derived = await crypto.subtle.deriveBits(
-        { name: 'HKDF', hash: 'SHA-256', salt: new TextEncoder().encode('entropypass-v1'), info: new Uint8Array() },
-        ikm,
-        256,
-      );
-      const hashBytes = new Uint8Array(derived);
+      // 2048 (BIP39 wordlist size) divides 65536 evenly, so `% 2048` on a
+      // uniform 16-bit value introduces no modulo bias.
       const words: string[] = [];
+      const buf = new Uint16Array(count * 2);
       while (words.length < count) {
-        const buf = new Uint16Array(count * 4);
         crypto.getRandomValues(buf);
         for (let i = 0; i < buf.length && words.length < count; i++) {
-          buf[i] ^= (hashBytes[i % 32] << 8) | hashBytes[(i + 1) % 32];
-          const maxValid = 65536 - (65536 % 2048);
-          if (buf[i] < maxValid) words.push(wordlist[buf[i] % 2048]);
+          words.push(wordlist[buf[i] % 2048]);
         }
       }
       onPasswordGenerated(words.join(separator), entropyBits);
     } finally {
       setIsGenerating(false);
     }
-  }, [canvasEntropy, wordCount, separator, onPasswordGenerated]);
+  }, [wordCount, separator, onPasswordGenerated]);
 
-  const generatePassword = useCallback(async () => {
+  const generatePassword = useCallback(() => {
     const filterAmbiguous = (chars: string) =>
       options.excludeAmbiguous ? chars.split('').filter(c => !AMBIGUOUS.has(c)).join('') : chars;
 
+    setError(null);
     setIsGenerating(true);
     try {
       const parts: { chars: string; enabled: boolean }[] = [
         { chars: filterAmbiguous(LOWERCASE), enabled: options.lowercase },
         { chars: filterAmbiguous(UPPERCASE), enabled: options.uppercase },
         { chars: filterAmbiguous(NUMBERS),   enabled: options.numbers },
-        { chars: SPECIAL,                    enabled: options.special },
+        { chars: filterAmbiguous(SPECIAL),   enabled: options.special },
       ];
       const enabledParts = parts.filter(p => p.enabled && p.chars.length > 0);
       if (enabledParts.length === 0) {
-        alert('Please select at least one character type');
+        setError('Select at least one character type.');
         return;
       }
       const charset = enabledParts.map(p => p.chars).join('');
       const length = passwordLength[0];
       const entropyBits = Math.log2(charset.length) * length;
-      const timingEntropy = `${Date.now()}:${performance.now()}`;
-      const weatherEntropy = await getWeatherEntropy();
-      const canvasEntropyStr = canvasEntropy.join(',');
-      const nonce = crypto.randomUUID();
-      const deviceEntropy = [
-        screen.width, screen.height, screen.colorDepth,
-        navigator.hardwareConcurrency ?? 0,
-        (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 0,
-        navigator.language,
-        Intl.DateTimeFormat().resolvedOptions().timeZone,
-      ].join(':');
-      const entropyString = [timingEntropy, weatherEntropy, canvasEntropyStr, nonce, deviceEntropy].join('|');
-      const ikm = await crypto.subtle.importKey(
-        'raw',
-        new TextEncoder().encode(entropyString),
-        { name: 'HKDF' },
-        false,
-        ['deriveBits'],
-      );
-      const derived = await crypto.subtle.deriveBits(
-        { name: 'HKDF', hash: 'SHA-256', salt: new TextEncoder().encode('entropypass-v1'), info: new Uint8Array() },
-        ikm,
-        256,
-      );
-      const hkdfBytes = new Uint8Array(derived);
-      const hashBytes = hkdfBytes;
+
+      // Pull every byte from the browser's CSPRNG. Rejection sampling
+      // (discarding bytes >= maxValid) guarantees an unbiased uniform pick.
       const randomBytes = new Uint8Array(length * 8);
       crypto.getRandomValues(randomBytes);
-      for (let i = 0; i < randomBytes.length; i++) {
-        randomBytes[i] ^= hkdfBytes[i % 32];
-      }
       let byteIdx = 0;
       const pickChar = (cs: string): string => {
         const maxValid = 256 - (256 % cs.length);
         while (true) {
           if (byteIdx >= randomBytes.length) {
             crypto.getRandomValues(randomBytes);
-            for (let i = 0; i < randomBytes.length; i++) randomBytes[i] ^= hashBytes[i % 32];
             byteIdx = 0;
           }
           const byte = randomBytes[byteIdx++];
           if (byte < maxValid) return cs[byte % cs.length];
         }
       };
+
       const mandatoryCount = Math.min(enabledParts.length, length);
       const baseCount = length - mandatoryCount;
-      const base: string[] = [];
-      for (let i = 0; i < baseCount; i++) base.push(pickChar(charset));
-      const mandatory: string[] = enabledParts.map(p => pickChar(p.chars));
-      const combined = [...base, ...mandatory];
-      const shuffleBytes = new Uint32Array(combined.length);
+      const chars: string[] = [];
+      for (let i = 0; i < baseCount; i++) chars.push(pickChar(charset));
+      for (let i = 0; i < mandatoryCount; i++) chars.push(pickChar(enabledParts[i].chars));
+
+      // Fisher-Yates shuffle (also CSPRNG-sourced) so the guaranteed-per-class
+      // characters aren't predictably clustered at the end.
+      const shuffleBytes = new Uint32Array(chars.length);
       crypto.getRandomValues(shuffleBytes);
-      for (let i = combined.length - 1; i > 0; i--) {
+      for (let i = chars.length - 1; i > 0; i--) {
         const j = shuffleBytes[i] % (i + 1);
-        [combined[i], combined[j]] = [combined[j], combined[i]];
+        [chars[i], chars[j]] = [chars[j], chars[i]];
       }
-      onPasswordGenerated(combined.join(''), entropyBits);
+      onPasswordGenerated(chars.join(''), entropyBits);
     } finally {
       setIsGenerating(false);
     }
-  }, [canvasEntropy, options, passwordLength, onPasswordGenerated]);
+  }, [options, passwordLength, onPasswordGenerated]);
 
   useEffect(() => {
     if (regenerateTrigger > 0) {
@@ -286,16 +234,13 @@ export function PasswordConfig({ canvasEntropy, hasDrawnEntropy, regenerateTrigg
               />
             </div>
 
-            {/* Warning */}
-            {!hasDrawnEntropy && (
+            {/* Validation error */}
+            {error && (
               <div
-                className="flex items-start gap-2.5 rounded-lg px-3 py-2.5"
-                style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.15)' }}
+                className="rounded-lg px-3 py-2.5"
+                style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}
               >
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
-                <p className="text-xs text-amber-600">
-                  Drawing on the canvas adds personal entropy to your password. You can still generate without it.
-                </p>
+                <p className="text-xs text-red-400">{error}</p>
               </div>
             )}
 
