@@ -106,7 +106,7 @@ components/
   PasswordConfig.tsx  # Generation settings + crypto logic
   GeneratedPassword.tsx  # Output + strength analysis
   PasswordHistory.tsx    # Session history
-  PasswordStrengthTester.tsx  # External-verification link
+  PasswordStrengthTester.tsx  # How strength is measured (local-only)
   ui/                 # shadcn/ui primitives
 ```
 

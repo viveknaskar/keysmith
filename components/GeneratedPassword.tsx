@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from '@/components/ui/button';
-import { Copy, Eye, EyeOff, RefreshCw, ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
+import { Copy, Eye, EyeOff, RefreshCw, ClipboardX, ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { zxcvbn, zxcvbnOptions } from '@zxcvbn-ts/core';
@@ -79,6 +79,16 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error('Failed to copy — please select and copy manually');
+    }
+  };
+
+  const clearClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText('');
+      toast.success('Clipboard cleared');
+      setCopied(false);
+    } catch {
+      toast.error('Could not clear clipboard — clear it manually');
     }
   };
 
@@ -179,6 +189,18 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
             >
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
+            {copied && (
+              <button
+                onClick={clearClipboard}
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                style={{ color: '#555', border: '1px solid #1a1a1a' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#f59e0b')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#555')}
+                title="Clear clipboard"
+              >
+                <ClipboardX className="w-3.5 h-3.5" />
+              </button>
+            )}
             <button
               onClick={copyToClipboard}
               className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-medium transition-all"
