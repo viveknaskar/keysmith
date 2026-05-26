@@ -78,7 +78,7 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Failed to copy — please select and copy manually');
+      toast.error('Failed to copy. Select and copy manually');
     }
   };
 
@@ -88,7 +88,7 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
       toast.success('Clipboard cleared');
       setCopied(false);
     } catch {
-      toast.error('Could not clear clipboard — clear it manually');
+      toast.error('Could not clear clipboard. Clear it manually');
     }
   };
 
@@ -107,11 +107,11 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
     return (
       <div
         className="rounded-xl p-8 text-center"
-        style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}
+        style={{ background: '#141417', border: '1px solid #26262b' }}
       >
         <div
           className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
-          style={{ background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.1)' }}
+          style={{ background: 'rgba(122,162,247,0.08)', border: '1px solid rgba(122,162,247,0.12)' }}
         >
           <Shield className="w-6 h-6 text-zinc-700" />
         </div>
@@ -132,14 +132,13 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
     <div
       className="rounded-xl overflow-hidden"
       style={{
-        background: '#0a0a0a',
+        background: '#141417',
         border: `1px solid ${cfg.border}`,
-        boxShadow: `0 0 30px ${cfg.bg}`,
       }}
     >
       {/* Header */}
       <div className="px-6 pt-5 pb-4 flex items-center justify-between"
-        style={{ borderBottom: '1px solid #141414' }}
+        style={{ borderBottom: '1px solid #1f1f24' }}
       >
         <div className="flex items-center gap-2.5">
           <StrengthIcon className="w-4 h-4" style={{ color: cfg.color }} />
@@ -158,11 +157,12 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
         {/* Password display */}
         <div
           className="flex items-center gap-2 p-3 rounded-xl"
-          style={{ background: '#050505', border: '1px solid #1a1a1a' }}
+          style={{ background: '#0b0b0d', border: '1px solid #26262b' }}
         >
           <input
             value={password}
             readOnly
+            aria-label="Generated password"
             type={visible ? 'text' : 'password'}
             onClick={e => (e.target as HTMLInputElement).select()}
             className="flex-1 bg-transparent font-mono text-sm text-white outline-none cursor-pointer min-w-0"
@@ -172,20 +172,22 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
             <button
               onClick={() => setVisible(v => !v)}
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-              style={{ color: '#555', border: '1px solid #1a1a1a' }}
+              style={{ color: '#555', border: '1px solid #26262b' }}
               onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
               onMouseLeave={e => (e.currentTarget.style.color = '#555')}
               title={visible ? 'Hide' : 'Show'}
+              aria-label={visible ? 'Hide password' : 'Show password'}
             >
               {visible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
             </button>
             <button
               onClick={onRegenerate}
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-              style={{ color: '#555', border: '1px solid #1a1a1a' }}
+              style={{ color: '#555', border: '1px solid #26262b' }}
               onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
               onMouseLeave={e => (e.currentTarget.style.color = '#555')}
               title="Regenerate"
+              aria-label="Regenerate password"
             >
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
@@ -193,10 +195,11 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
               <button
                 onClick={clearClipboard}
                 className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                style={{ color: '#555', border: '1px solid #1a1a1a' }}
+                style={{ color: '#555', border: '1px solid #26262b' }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#f59e0b')}
                 onMouseLeave={e => (e.currentTarget.style.color = '#555')}
                 title="Clear clipboard"
+                aria-label="Clear clipboard"
               >
                 <ClipboardX className="w-3.5 h-3.5" />
               </button>
@@ -205,11 +208,12 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
               onClick={copyToClipboard}
               className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-medium transition-all"
               style={{
-                background: copied ? 'rgba(34,197,94,0.1)' : 'rgba(0,212,255,0.08)',
-                border: `1px solid ${copied ? 'rgba(34,197,94,0.2)' : 'rgba(0,212,255,0.15)'}`,
-                color: copied ? '#22c55e' : '#00d4ff',
+                background: copied ? 'rgba(34,197,94,0.1)' : 'rgba(122,162,247,0.10)',
+                border: `1px solid ${copied ? 'rgba(34,197,94,0.2)' : 'rgba(122,162,247,0.25)'}`,
+                color: copied ? '#22c55e' : '#7aa2f7',
               }}
               title="Copy"
+              aria-label="Copy password to clipboard"
             >
               <Copy className="w-3 h-3" />
               {copied ? 'Copied' : 'Copy'}
@@ -227,7 +231,7 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
             <div
               key={label}
               className="rounded-lg px-3 py-2.5 text-center"
-              style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}
+              style={{ background: '#1a1a1e', border: '1px solid #26262b' }}
             >
               <div className="text-xs text-zinc-600 mb-1">{label}</div>
               <div className="text-xs font-semibold text-white truncate" title={value}>{value}</div>
@@ -238,7 +242,7 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
         {/* Character breakdown */}
         <div
           className="rounded-lg px-4 py-3"
-          style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}
+          style={{ background: '#1a1a1e', border: '1px solid #26262b' }}
         >
           <div className="text-xs text-zinc-600 mb-2.5">Character breakdown</div>
           <div className="flex gap-3 flex-wrap">
@@ -253,7 +257,7 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
         {zxcvbnScore !== null && (
           <div
             className="rounded-lg px-4 py-3 space-y-2.5"
-            style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}
+            style={{ background: '#1a1a1e', border: '1px solid #26262b' }}
           >
             <div className="flex items-center justify-between">
               <span className="text-xs text-zinc-600">Pattern analysis (zxcvbn)</span>
@@ -267,7 +271,7 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
                   key={i}
                   className="h-1 flex-1 rounded-full"
                   style={{
-                    background: i <= zxcvbnScore ? zxcvbnColors[zxcvbnScore] : '#1f1f1f',
+                    background: i <= zxcvbnScore ? zxcvbnColors[zxcvbnScore] : '#26262b',
                     boxShadow: i <= zxcvbnScore ? `0 0 6px ${zxcvbnColors[zxcvbnScore]}60` : 'none',
                   }}
                 />

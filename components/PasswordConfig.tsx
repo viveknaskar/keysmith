@@ -127,7 +127,7 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
   return (
     <div
       className="rounded-xl overflow-hidden"
-      style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}
+      style={{ background: '#141417', border: '1px solid #26262b' }}
     >
       <div className="px-6 pt-5 pb-3">
         <h2 className="text-base font-semibold text-white">Password Configuration</h2>
@@ -138,7 +138,7 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
           {/* Tab list */}
           <TabsList
             className="w-full mb-6 p-1 rounded-lg h-auto gap-1"
-            style={{ background: '#111', border: '1px solid #1a1a1a' }}
+            style={{ background: '#1a1a1e', border: '1px solid #26262b' }}
           >
             <TabsTrigger
               value="password"
@@ -163,7 +163,7 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
                 <Label className="text-sm text-zinc-400">Password Length</Label>
                 <span
                   className="text-sm font-mono px-2 py-0.5 rounded"
-                  style={{ background: '#111', color: '#00d4ff', border: '1px solid #1a1a1a' }}
+                  style={{ background: '#1a1a1e', color: '#7aa2f7', border: '1px solid #26262b' }}
                 >
                   {passwordLength[0]}
                 </span>
@@ -194,8 +194,8 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
                   key={id}
                   className="flex items-center justify-between p-3 rounded-lg cursor-pointer"
                   style={{
-                    background: options[key] ? 'rgba(0,212,255,0.04)' : '#0d0d0d',
-                    border: `1px solid ${options[key] ? 'rgba(0,212,255,0.15)' : '#1a1a1a'}`,
+                    background: options[key] ? 'rgba(122,162,247,0.07)' : '#1a1a1e',
+                    border: `1px solid ${options[key] ? 'rgba(122,162,247,0.22)' : '#26262b'}`,
                   }}
                   onClick={() => setOptions(prev => ({ ...prev, [key]: !prev[key] }))}
                 >
@@ -217,8 +217,8 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
             <div
               className="flex items-center justify-between p-3 rounded-lg cursor-pointer"
               style={{
-                background: options.excludeAmbiguous ? 'rgba(245,158,11,0.04)' : '#0d0d0d',
-                border: `1px solid ${options.excludeAmbiguous ? 'rgba(245,158,11,0.2)' : '#1a1a1a'}`,
+                background: options.excludeAmbiguous ? 'rgba(245,158,11,0.04)' : '#1a1a1e',
+                border: `1px solid ${options.excludeAmbiguous ? 'rgba(245,158,11,0.2)' : '#26262b'}`,
               }}
               onClick={() => setOptions(prev => ({ ...prev, excludeAmbiguous: !prev.excludeAmbiguous }))}
             >
@@ -249,10 +249,9 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
               disabled={isGenerating}
               className="w-full h-11 text-sm font-semibold transition-all"
               style={{
-                background: isGenerating ? '#111' : 'linear-gradient(135deg, #00d4ff, #0ea5e9)',
-                color: isGenerating ? '#555' : '#000',
+                background: isGenerating ? '#1a1a1e' : '#7aa2f7',
+                color: isGenerating ? '#52525b' : '#0b0b0d',
                 border: 'none',
-                boxShadow: isGenerating ? 'none' : '0 0 20px rgba(0,212,255,0.2)',
               }}
             >
               {isGenerating
@@ -270,7 +269,7 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
                 <Label className="text-sm text-zinc-400">Number of Words</Label>
                 <span
                   className="text-sm font-mono px-2 py-0.5 rounded"
-                  style={{ background: '#111', color: '#00d4ff', border: '1px solid #1a1a1a' }}
+                  style={{ background: '#1a1a1e', color: '#7aa2f7', border: '1px solid #26262b' }}
                 >
                   {wordCount[0]}
                 </span>
@@ -288,16 +287,16 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
               <Select value={separator} onValueChange={setSeparator}>
                 <SelectTrigger
                   className="flex-1 h-9 text-sm"
-                  style={{ background: '#111', border: '1px solid #1a1a1a', color: '#fff' }}
+                  style={{ background: '#1a1a1e', border: '1px solid #26262b', color: '#fff' }}
                 >
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent style={{ background: '#111', border: '1px solid #222', color: '#fff' }}>
-                  <SelectItem value="-">Hyphen — word-word</SelectItem>
-                  <SelectItem value=" ">Space — word word</SelectItem>
-                  <SelectItem value=".">Dot — word.word</SelectItem>
-                  <SelectItem value="_">Underscore — word_word</SelectItem>
-                  <SelectItem value="">None — wordword</SelectItem>
+                <SelectContent style={{ background: '#1a1a1e', border: '1px solid #2e2e34', color: '#fff' }}>
+                  <SelectItem value="-">Hyphen: word-word</SelectItem>
+                  <SelectItem value=" ">Space: word word</SelectItem>
+                  <SelectItem value=".">Dot: word.word</SelectItem>
+                  <SelectItem value="_">Underscore: word_word</SelectItem>
+                  <SelectItem value="">None: wordword</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -305,10 +304,10 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
             {/* Entropy info */}
             <div
               className="rounded-lg px-4 py-3 flex items-center justify-between"
-              style={{ background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.1)' }}
+              style={{ background: 'rgba(122,162,247,0.07)', border: '1px solid rgba(122,162,247,0.12)' }}
             >
               <span className="text-xs text-zinc-500">Estimated entropy</span>
-              <span className="text-sm font-mono" style={{ color: '#00d4ff' }}>
+              <span className="text-sm font-mono" style={{ color: '#7aa2f7' }}>
                 {wordCount[0] * 11} bits
                 <span className="text-xs text-zinc-600 ml-1.5">({wordCount[0]} × 11 bits / BIP39)</span>
               </span>
@@ -319,10 +318,9 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
               disabled={isGenerating}
               className="w-full h-11 text-sm font-semibold transition-all"
               style={{
-                background: isGenerating ? '#111' : 'linear-gradient(135deg, #7c3aed, #9333ea)',
-                color: isGenerating ? '#555' : '#fff',
-                border: 'none',
-                boxShadow: isGenerating ? 'none' : '0 0 20px rgba(124,58,237,0.25)',
+                background: isGenerating ? '#1a1a1e' : 'rgba(122,162,247,0.12)',
+                color: isGenerating ? '#52525b' : '#7aa2f7',
+                border: `1px solid ${isGenerating ? 'transparent' : 'rgba(122,162,247,0.25)'}`,
               }}
             >
               {isGenerating

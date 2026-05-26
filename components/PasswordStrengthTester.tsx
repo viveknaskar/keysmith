@@ -4,7 +4,7 @@ const points = [
   {
     icon: Activity,
     title: 'Entropy estimate',
-    text: 'Bits of entropy from your chosen length and character set — the higher, the more guesses an attacker needs.',
+    text: 'Bits of entropy from your chosen length and character set. The more bits, the more guesses an attacker needs.',
   },
   {
     icon: Eye,
@@ -22,12 +22,12 @@ export function PasswordStrengthTester() {
   return (
     <div
       className="rounded-xl p-6"
-      style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}
+      style={{ background: '#141417', border: '1px solid #26262b' }}
     >
       <div className="mb-5">
         <h2 className="text-base font-semibold text-white mb-1.5">Strength is analyzed right here</h2>
         <p className="text-sm text-zinc-500">
-          Every password is scored locally in your browser — no need to test it anywhere else.
+          Every password is scored locally in your browser, with no need to test it anywhere else.
         </p>
       </div>
 
@@ -36,9 +36,9 @@ export function PasswordStrengthTester() {
           <div
             key={title}
             className="rounded-lg p-4"
-            style={{ background: '#0d0d0d', border: '1px solid #161616' }}
+            style={{ background: '#1a1a1e', border: '1px solid #222227' }}
           >
-            <Icon className="w-4 h-4 mb-2.5" style={{ color: '#22c55e' }} />
+            <Icon className="w-4 h-4 mb-2.5" style={{ color: '#7aa2f7' }} />
             <div className="text-sm font-medium text-white mb-1">{title}</div>
             <p className="text-xs text-zinc-600 leading-relaxed">{text}</p>
           </div>
@@ -52,7 +52,7 @@ export function PasswordStrengthTester() {
         <Ban className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
         <p className="text-xs text-amber-600/90 leading-relaxed">
           <span className="font-medium text-amber-500">Never paste a real password into any website</span> to
-          &ldquo;check&rdquo; it — including ones that claim to run locally. A password you intend to use should only
+          &ldquo;check&rdquo; it, including ones that claim to run locally. A password you intend to use should only
           ever be typed into the account it belongs to. The analysis above happens entirely in this tab and is never sent anywhere.
         </p>
       </div>

@@ -37,12 +37,12 @@ export function PasswordHistory({ entries, onClear }: PasswordHistoryProps) {
   return (
     <div
       className="rounded-xl overflow-hidden"
-      style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}
+      style={{ background: '#141417', border: '1px solid #26262b' }}
     >
       {/* Header */}
       <div
         className="px-6 py-4 flex items-center justify-between"
-        style={{ borderBottom: '1px solid #141414' }}
+        style={{ borderBottom: '1px solid #1f1f24' }}
       >
         <div className="flex items-center gap-2.5">
           <Clock className="w-4 h-4 text-zinc-600" />
@@ -51,7 +51,7 @@ export function PasswordHistory({ entries, onClear }: PasswordHistoryProps) {
           </div>
           <span
             className="text-xs px-2 py-0.5 rounded-full font-mono"
-            style={{ background: '#111', border: '1px solid #222', color: '#555' }}
+            style={{ background: '#1a1a1e', border: '1px solid #222', color: '#555' }}
           >
             {entries.length}
           </span>
@@ -78,9 +78,9 @@ export function PasswordHistory({ entries, onClear }: PasswordHistoryProps) {
             <div
               key={entry.id}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all group"
-              style={{ background: '#0d0d0d', border: '1px solid #161616' }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = '#222')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = '#161616')}
+              style={{ background: '#1a1a1e', border: '1px solid #222227' }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = '#2e2e34')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = '#222227')}
             >
               <span className="text-xs text-zinc-700 font-mono w-4 shrink-0 select-none">
                 {idx + 1}
@@ -98,12 +98,13 @@ export function PasswordHistory({ entries, onClear }: PasswordHistoryProps) {
                 {Math.round(entry.entropyBits)}b
               </span>
               <button
-                className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{ color: '#555', border: '1px solid #1a1a1a' }}
+                className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+                style={{ color: '#555', border: '1px solid #26262b' }}
                 onClick={() => copy(entry.password)}
-                onMouseEnter={e => (e.currentTarget.style.color = '#00d4ff')}
+                onMouseEnter={e => (e.currentTarget.style.color = '#7aa2f7')}
                 onMouseLeave={e => (e.currentTarget.style.color = '#555')}
                 title="Copy password"
+                aria-label="Copy this password"
               >
                 <Copy className="w-3 h-3" />
               </button>

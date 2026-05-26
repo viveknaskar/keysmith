@@ -16,21 +16,12 @@ export default function Home() {
   const historyIdRef = useRef(0);
 
   return (
-    <div className="min-h-screen" style={{ background: '#050505' }}>
-      {/* Background grid pattern */}
+    <div className="min-h-screen" style={{ background: '#0b0b0d' }}>
+      {/* Subtle top vignette for depth, no neon */}
       <div
-        className="fixed inset-0 pointer-events-none opacity-[0.03]"
+        className="fixed top-0 left-0 right-0 h-[420px] pointer-events-none"
         style={{
-          backgroundImage:
-            'linear-gradient(rgba(0,212,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.3) 1px, transparent 1px)',
-          backgroundSize: '60px 60px',
-        }}
-      />
-      {/* Top gradient blob */}
-      <div
-        className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at center, rgba(0,212,255,0.06) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(122,162,247,0.05) 0%, transparent 70%)',
         }}
       />
 
