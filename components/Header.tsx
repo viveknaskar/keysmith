@@ -17,7 +17,7 @@ export function Header() {
 
       {/* Title */}
       <h1 className="text-5xl sm:text-6xl font-semibold tracking-tight mb-4 text-white">
-        EntropyPass
+        Keysmith
       </h1>
 
       {/* Tagline */}

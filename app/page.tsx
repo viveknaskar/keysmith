@@ -48,7 +48,7 @@ export default function Home() {
         <PasswordStrengthTester />
 
         <footer className="text-center text-xs text-zinc-700 py-4">
-          EntropyPass &mdash; All generation happens client-side. Nothing is stored or transmitted.
+          Keysmith. All generation happens client-side. Nothing is stored or transmitted.
         </footer>
       </div>
     </div>

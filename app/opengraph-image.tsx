@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const dynamic = 'force-static';
-export const alt = 'EntropyPass: strong passwords generated in your browser';
+export const alt = 'Keysmith: strong passwords generated in your browser';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -41,7 +41,7 @@ export default function OpengraphImage() {
               <path d="m9 12 2 2 4-4" />
             </svg>
           </div>
-          <div style={{ fontSize: 40, fontWeight: 600, color: '#a1a1aa' }}>EntropyPass</div>
+          <div style={{ fontSize: 40, fontWeight: 600, color: '#a1a1aa' }}>Keysmith</div>
         </div>
 
         <div style={{ fontSize: 76, fontWeight: 700, lineHeight: 1.05, maxWidth: 900 }}>

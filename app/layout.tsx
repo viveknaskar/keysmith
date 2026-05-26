@@ -7,8 +7,8 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 // TODO: set this to your real deployed URL before launch so share cards resolve.
-const siteUrl = 'https://entropypass.app';
-const title = 'EntropyPass: Strong Passwords, Generated In Your Browser';
+const siteUrl = 'https://keysmith.app';
+const title = 'Keysmith: Strong Passwords, Generated In Your Browser';
 const description =
   'Generate strong, high-entropy passwords and passphrases entirely in your browser using the Web Crypto CSPRNG. No network requests, nothing stored.';
 
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     url: siteUrl,
-    siteName: 'EntropyPass',
+    siteName: 'Keysmith',
     title,
     description,
   },

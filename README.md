@@ -1,4 +1,4 @@
-# EntropyPass
+# Keysmith
 
 Generate strong, high-entropy passwords and passphrases entirely in your browser, using the Web Crypto API's cryptographically secure random number generator.
 
@@ -6,7 +6,7 @@ Generate strong, high-entropy passwords and passphrases entirely in your browser
 
 ## What is password entropy?
 
-**Entropy** is a measure of *unpredictability*, meaning how hard something is to guess. For passwords it's measured in **bits**, and the name of the app comes from it: the more entropy, the stronger the password.
+**Entropy** is a measure of *unpredictability*, meaning how hard something is to guess. For passwords it's measured in **bits**: the more entropy, the stronger the password.
 
 The key idea is that **each extra bit doubles the number of guesses an attacker needs.** Entropy is the base-2 logarithm of the number of equally likely possibilities:
 
@@ -27,9 +27,9 @@ So a 16-character password drawn from 94 possible symbols has `16 × log2(94) �
 
 Two things determine a password's entropy: **how long it is** and **how large the pool of symbols is**, but only if every character is genuinely random. This is the crucial catch. "P@ssw0rd123!" is 12 characters from a large set, yet its real entropy is tiny, because it's a predictable word with predictable substitutions. Entropy math only holds when the characters are chosen unpredictably.
 
-## How EntropyPass helps you get there
+## How Keysmith helps you get there
 
-A strong password needs **both** high theoretical entropy **and** true randomness behind it. EntropyPass gives you both:
+A strong password needs **both** high theoretical entropy **and** true randomness behind it. Keysmith gives you both:
 
 - **Maximises the character pool.** Toggle lowercase, uppercase, numbers, and symbols to widen the set (more `log2(charset)` per character).
 - **Lets you push the length up.** 8 to 64 characters, or 3–10 word passphrases. Length is the cheapest way to add entropy.
@@ -37,11 +37,11 @@ A strong password needs **both** high theoretical entropy **and** true randomnes
 - **Shows you the number, honestly.** The entropy estimate, a crack-time figure, and a [zxcvbn](https://github.com/dropbox/zxcvbn) pattern check are displayed for every password, so you can see exactly how strong it is and *why*.
 - **Offers passphrases.** Memorable word sequences from the 2048-word BIP39 list (11 bits per word) for when you need to type a password by hand.
 
-In short, EntropyPass turns the entropy formula above into a tool: you choose length and character types, it supplies the genuine randomness, and it tells you how many bits you ended up with.
+In short, Keysmith turns the entropy formula above into a tool: you choose length and character types, it supplies the genuine randomness, and it tells you how many bits you ended up with.
 
 ## How it works
 
-A password is only as good as its source of randomness. EntropyPass uses **`crypto.getRandomValues()`**, the browser's built-in cryptographically secure RNG (CSPRNG), for every character. This is the same class of generator used by password managers and TLS, and it is fully sufficient on its own: no extra "entropy sources" are needed or used.
+A password is only as good as its source of randomness. Keysmith uses **`crypto.getRandomValues()`**, the browser's built-in cryptographically secure RNG (CSPRNG), for every character. This is the same class of generator used by password managers and TLS, and it is fully sufficient on its own: no extra "entropy sources" are needed or used.
 
 To turn raw random bytes into characters without skewing the distribution:
 
@@ -67,7 +67,7 @@ To turn raw random bytes into characters without skewing the distribution:
 - **Pseudo-Random.** A computer can't conjure true randomness from arithmetic alone, so it expands a hidden internal seed into a stream of numbers that *look* random.
 - **Cryptographically Secure.** This is the defining extra guarantee: even after observing many outputs, an attacker **cannot predict the next value or reconstruct previous ones**. The internal state is seeded from genuine hardware entropy (timing jitter, electrical noise, the OS entropy pool).
 
-In the browser this is exposed as **`crypto.getRandomValues()`** (part of the [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)). It's the same class of generator that backs TLS and password managers, and EntropyPass uses it for every single character.
+In the browser this is exposed as **`crypto.getRandomValues()`** (part of the [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)). It's the same class of generator that backs TLS and password managers, and Keysmith uses it for every single character.
 
 ### Why not `Math.random()`?
 
@@ -83,7 +83,7 @@ Most engines implement `Math.random()` with an algorithm such as **xorshift128+*
 
 **Rule of thumb:** if the number needs to be a secret or unguessable, use a CSPRNG (`crypto.getRandomValues`), never `Math.random()`.
 
-> EntropyPass uses **no** `Math.random()` anywhere in its generation path. Every byte comes from `crypto.getRandomValues()`.
+> Keysmith uses **no** `Math.random()` anywhere in its generation path. Every byte comes from `crypto.getRandomValues()`.
 
 ---
 
