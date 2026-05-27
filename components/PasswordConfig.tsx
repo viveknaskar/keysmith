@@ -8,8 +8,15 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Zap } from 'lucide-react';
-import { wordlists } from 'bip39';
-const wordlist = wordlists['english'];
+// Import the wordlist JSON directly rather than `import { wordlists } from 'bip39'`.
+// The named CommonJS re-export can resolve to `undefined` in some browser bundles,
+// and the direct import also keeps only the English list out of the bundle.
+import englishWordlist from 'bip39/src/wordlists/english.json';
+const wordlist = englishWordlist as string[];
+
+// Radix <SelectItem> forbids an empty-string value, so "no separator" uses a
+// sentinel that is mapped back to '' at generation time.
+const NO_SEPARATOR = 'none';
 
 const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz';
 const UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -38,8 +45,13 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
   const [error, setError] = useState<string | null>(null);
 
   const generatePassphrase = useCallback(() => {
+    setError(null);
     setIsGenerating(true);
     try {
+      if (wordlist.length < 2048) {
+        setError('Word list failed to load. Please reload the page.');
+        return;
+      }
       const count = wordCount[0];
       const entropyBits = 11 * count;
       // 2048 (BIP39 wordlist size) divides 65536 evenly, so `% 2048` on a
@@ -52,7 +64,8 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
           words.push(wordlist[buf[i] % 2048]);
         }
       }
-      onPasswordGenerated(words.join(separator), entropyBits);
+      const sep = separator === NO_SEPARATOR ? '' : separator;
+      onPasswordGenerated(words.join(sep), entropyBits);
     } finally {
       setIsGenerating(false);
     }
@@ -296,7 +309,7 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
                   <SelectItem value=" ">Space: word word</SelectItem>
                   <SelectItem value=".">Dot: word.word</SelectItem>
                   <SelectItem value="_">Underscore: word_word</SelectItem>
-                  <SelectItem value="">None: wordword</SelectItem>
+                  <SelectItem value={NO_SEPARATOR}>None: wordword</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -312,6 +325,15 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
                 <span className="text-xs text-zinc-600 ml-1.5">({wordCount[0]} × 11 bits / BIP39)</span>
               </span>
             </div>
+
+            {error && (
+              <div
+                className="rounded-lg px-3 py-2.5"
+                style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}
+              >
+                <p className="text-xs text-red-400">{error}</p>
+              </div>
+            )}
 
             <Button
               onClick={generatePassphrase}
