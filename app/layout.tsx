@@ -6,20 +6,25 @@ import { Toaster } from 'sonner';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
-// TODO: set this to your real deployed URL before launch so share cards resolve.
-const siteUrl = 'https://keysmith.app';
+// GitHub Pages project site served from https://viveknaskar.github.io/keysmith/.
+// Next does NOT apply basePath to metadata icon/OG-image URLs, so we prefix them
+// ourselves. basePath is empty in dev so local URLs stay at the root.
+const basePath = process.env.NODE_ENV === 'production' ? '/keysmith' : '';
+const siteOrigin = 'https://viveknaskar.github.io';
+const siteUrl = `${siteOrigin}${basePath}`;
+const ogImage = `${siteUrl}/og.png`;
 const title = 'Keysmith: Strong Passwords, Generated In Your Browser';
 const description =
   'Generate strong, high-entropy passwords and passphrases entirely in your browser using the Web Crypto CSPRNG. No network requests, nothing stored.';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(siteOrigin),
   title,
   description,
   keywords: ['password generator', 'passphrase', 'entropy', 'CSPRNG', 'security', 'privacy'],
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
+    icon: `${basePath}/favicon.svg`,
+    shortcut: `${basePath}/favicon.svg`,
   },
   openGraph: {
     type: 'website',
@@ -27,11 +32,13 @@ export const metadata: Metadata = {
     siteName: 'Keysmith',
     title,
     description,
+    images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
   },
   twitter: {
     card: 'summary_large_image',
     title,
     description,
+    images: [ogImage],
   },
 };
 
