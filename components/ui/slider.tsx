@@ -12,15 +12,28 @@ const Slider = React.forwardRef<
   <SliderPrimitive.Root
     ref={ref}
     className={cn(
-      'relative flex w-full touch-none select-none items-center',
+      // py-2.5 enlarges the clickable/draggable area so the thin track is easy to grab.
+      'relative flex w-full touch-none select-none items-center py-2.5 cursor-pointer',
       className
     )}
     {...props}
   >
-    <SliderPrimitive.Track className="relative h-1 w-full grow overflow-hidden rounded-full" style={{ background: '#1a1a1a' }}>
-      <SliderPrimitive.Range className="absolute h-full" style={{ background: 'linear-gradient(90deg, #00d4ff, #0ea5e9)', boxShadow: '0 0 8px rgba(0,212,255,0.4)' }} />
+    <SliderPrimitive.Track
+      className="relative h-1.5 w-full grow overflow-hidden rounded-full"
+      style={{ background: '#26262b' }}
+    >
+      <SliderPrimitive.Range className="absolute h-full" style={{ background: '#7aa2f7' }} />
     </SliderPrimitive.Track>
-    <SliderPrimitive.Thumb className="block h-4 w-4 rounded-full ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:scale-110" style={{ background: '#00d4ff', border: '2px solid #050505', boxShadow: '0 0 12px rgba(0,212,255,0.5)' }} />
+    <SliderPrimitive.Thumb
+      className={cn(
+        'block h-5 w-5 rounded-full transition-transform hover:scale-110 active:scale-105',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7aa2f7] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0b0d]',
+        'disabled:pointer-events-none disabled:opacity-50',
+        // Invisible expanded hit area for easier touch/mouse grabbing.
+        "relative cursor-grab active:cursor-grabbing before:absolute before:-inset-2.5 before:content-['']",
+      )}
+      style={{ background: '#7aa2f7', border: '3px solid #0b0b0d', boxShadow: '0 1px 4px rgba(0,0,0,0.5)' }}
+    />
   </SliderPrimitive.Root>
 ));
 Slider.displayName = SliderPrimitive.Root.displayName;
