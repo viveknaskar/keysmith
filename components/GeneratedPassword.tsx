@@ -4,18 +4,30 @@ import { Button } from '@/components/ui/button';
 import { Copy, Eye, EyeOff, RefreshCw, ClipboardX, ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { zxcvbn, zxcvbnOptions } from '@zxcvbn-ts/core';
-import * as zxcvbnCommon from '@zxcvbn-ts/language-common';
-import * as zxcvbnEn from '@zxcvbn-ts/language-en';
+import type { ZxcvbnResult } from '@zxcvbn-ts/core';
 
-zxcvbnOptions.setOptions({
-  translations: zxcvbnEn.translations,
-  graphs: zxcvbnCommon.adjacencyGraphs,
-  dictionary: {
-    ...zxcvbnCommon.dictionary,
-    ...zxcvbnEn.dictionary,
-  },
-});
+// zxcvbn core plus its language dictionaries are a few hundred KB. Load them on
+// demand the first time a password needs analysis, rather than in the initial
+// page bundle, so first paint stays fast. The promise is cached so the chunk
+// and setOptions run only once per session.
+let zxcvbnLoader: Promise<(password: string) => ZxcvbnResult> | null = null;
+function loadZxcvbn() {
+  if (!zxcvbnLoader) {
+    zxcvbnLoader = Promise.all([
+      import('@zxcvbn-ts/core'),
+      import('@zxcvbn-ts/language-common'),
+      import('@zxcvbn-ts/language-en'),
+    ]).then(([core, common, en]) => {
+      core.zxcvbnOptions.setOptions({
+        translations: en.translations,
+        graphs: common.adjacencyGraphs,
+        dictionary: { ...common.dictionary, ...en.dictionary },
+      });
+      return (password: string) => core.zxcvbn(password);
+    });
+  }
+  return zxcvbnLoader;
+}
 
 interface GeneratedPasswordProps {
   password: string;
@@ -94,13 +106,18 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
 
   useEffect(() => {
     if (!password) { setZxcvbnScore(null); setZxcvbnFeedback([]); return; }
-    const result = zxcvbn(password);
-    setZxcvbnScore(result.score);
-    const warnings = [
-      result.feedback.warning,
-      ...(result.feedback.suggestions ?? []),
-    ].filter(Boolean) as string[];
-    setZxcvbnFeedback(warnings);
+    let cancelled = false;
+    loadZxcvbn().then(run => {
+      if (cancelled) return;
+      const result = run(password);
+      setZxcvbnScore(result.score);
+      const warnings = [
+        result.feedback.warning,
+        ...(result.feedback.suggestions ?? []),
+      ].filter(Boolean) as string[];
+      setZxcvbnFeedback(warnings);
+    });
+    return () => { cancelled = true; };
   }, [password]);
 
   if (!password) {

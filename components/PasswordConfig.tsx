@@ -41,8 +41,15 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
   });
   const [wordCount, setWordCount] = useState([5]);
   const [separator, setSeparator] = useState('-');
+  const [passphraseOptions, setPassphraseOptions] = useState({ capitalize: false, includeNumber: false });
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Capitalizing word initials is deterministic, so it satisfies "needs an
+  // uppercase letter" rules without adding entropy. A trailing random 0–99 adds
+  // log2(100) bits, so it counts toward the reported strength.
+  const NUMBER_BITS = Math.log2(100);
+  const passphraseEntropy = wordCount[0] * 11 + (passphraseOptions.includeNumber ? NUMBER_BITS : 0);
 
   const generatePassphrase = useCallback(() => {
     setError(null);
@@ -53,7 +60,7 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
         return;
       }
       const count = wordCount[0];
-      const entropyBits = 11 * count;
+      let entropyBits = 11 * count;
       // 2048 (BIP39 wordlist size) divides 65536 evenly, so `% 2048` on a
       // uniform 16-bit value introduces no modulo bias.
       const words: string[] = [];
@@ -61,15 +68,27 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
       while (words.length < count) {
         crypto.getRandomValues(buf);
         for (let i = 0; i < buf.length && words.length < count; i++) {
-          words.push(wordlist[buf[i] % 2048]);
+          let word = wordlist[buf[i] % 2048];
+          if (passphraseOptions.capitalize) word = word.charAt(0).toUpperCase() + word.slice(1);
+          words.push(word);
         }
       }
       const sep = separator === NO_SEPARATOR ? '' : separator;
-      onPasswordGenerated(words.join(sep), entropyBits);
+      let phrase = words.join(sep);
+
+      if (passphraseOptions.includeNumber) {
+        // Unbiased random 0–99 (reject bytes >= 200, the largest multiple of 100).
+        const numBuf = new Uint8Array(1);
+        do { crypto.getRandomValues(numBuf); } while (numBuf[0] >= 200);
+        phrase += sep + String(numBuf[0] % 100).padStart(2, '0');
+        entropyBits += NUMBER_BITS;
+      }
+
+      onPasswordGenerated(phrase, entropyBits);
     } finally {
       setIsGenerating(false);
     }
-  }, [wordCount, separator, onPasswordGenerated]);
+  }, [wordCount, separator, passphraseOptions, NUMBER_BITS, onPasswordGenerated]);
 
   const generatePassword = useCallback(() => {
     const filterAmbiguous = (chars: string) =>
@@ -314,6 +333,34 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
               </Select>
             </div>
 
+            {/* Passphrase options */}
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { key: 'capitalize' as const, label: 'Capitalize words', sub: 'Word-Word' },
+                { key: 'includeNumber' as const, label: 'Add a number', sub: 'word-word-42' },
+              ].map(({ key, label, sub }) => (
+                <div
+                  key={key}
+                  className="flex items-center justify-between p-3 rounded-lg cursor-pointer"
+                  style={{
+                    background: passphraseOptions[key] ? 'rgba(122,162,247,0.07)' : '#1a1a1e',
+                    border: `1px solid ${passphraseOptions[key] ? 'rgba(122,162,247,0.22)' : '#26262b'}`,
+                  }}
+                  onClick={() => setPassphraseOptions(prev => ({ ...prev, [key]: !prev[key] }))}
+                >
+                  <div>
+                    <div className="text-sm font-medium text-white">{label}</div>
+                    <div className="text-xs text-zinc-600 font-mono">{sub}</div>
+                  </div>
+                  <Switch
+                    checked={passphraseOptions[key]}
+                    onCheckedChange={checked => setPassphraseOptions(prev => ({ ...prev, [key]: checked }))}
+                    onClick={e => e.stopPropagation()}
+                  />
+                </div>
+              ))}
+            </div>
+
             {/* Entropy info */}
             <div
               className="rounded-lg px-4 py-3 flex items-center justify-between"
@@ -321,8 +368,10 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
             >
               <span className="text-xs text-zinc-500">Estimated entropy</span>
               <span className="text-sm font-mono" style={{ color: '#7aa2f7' }}>
-                {wordCount[0] * 11} bits
-                <span className="text-xs text-zinc-600 ml-1.5">({wordCount[0]} × 11 bits / BIP39)</span>
+                {Math.round(passphraseEntropy)} bits
+                <span className="text-xs text-zinc-600 ml-1.5">
+                  ({wordCount[0]} × 11{passphraseOptions.includeNumber ? ' + 6.6' : ''} bits)
+                </span>
               </span>
             </div>
 

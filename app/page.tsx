@@ -7,6 +7,7 @@ import { PasswordConfig } from '@/components/PasswordConfig';
 import { GeneratedPassword } from '@/components/GeneratedPassword';
 import { PasswordStrengthTester } from '@/components/PasswordStrengthTester';
 import { PasswordHistory, HistoryEntry } from '@/components/PasswordHistory';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function Home() {
   const [generatedPassword, setGeneratedPassword] = useState('');
@@ -28,24 +29,26 @@ export default function Home() {
       <div className="relative max-w-5xl mx-auto px-4 py-10 space-y-8">
         <Header />
         <FeatureOverview />
-        <PasswordConfig
-          regenerateTrigger={regenerateTrigger}
-          onPasswordGenerated={(pw, bits) => {
-            setGeneratedPassword(pw);
-            setPasswordEntropyBits(bits);
-            setHistory(h => [
-              { id: historyIdRef.current++, password: pw, entropyBits: bits, createdAt: new Date() },
-              ...h,
-            ].slice(0, 10));
-          }}
-        />
-        <GeneratedPassword
-          password={generatedPassword}
-          entropyBits={passwordEntropyBits}
-          onRegenerate={() => setRegenerateTrigger(t => t + 1)}
-        />
-        <PasswordHistory entries={history} onClear={() => setHistory([])} />
-        <PasswordStrengthTester />
+        <ErrorBoundary>
+          <PasswordConfig
+            regenerateTrigger={regenerateTrigger}
+            onPasswordGenerated={(pw, bits) => {
+              setGeneratedPassword(pw);
+              setPasswordEntropyBits(bits);
+              setHistory(h => [
+                { id: historyIdRef.current++, password: pw, entropyBits: bits, createdAt: new Date() },
+                ...h,
+              ].slice(0, 10));
+            }}
+          />
+          <GeneratedPassword
+            password={generatedPassword}
+            entropyBits={passwordEntropyBits}
+            onRegenerate={() => setRegenerateTrigger(t => t + 1)}
+          />
+          <PasswordHistory entries={history} onClear={() => setHistory([])} />
+          <PasswordStrengthTester />
+        </ErrorBoundary>
 
         <footer className="text-center text-xs text-zinc-700 py-4">
           Keysmith. All generation happens client-side. Nothing is stored or transmitted.
