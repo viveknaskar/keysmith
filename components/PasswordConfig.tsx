@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -75,8 +75,13 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
     }
   }, [options, passwordLength, onPasswordGenerated]);
 
+  // Regenerate when the parent bumps the trigger. Keyed on the trigger value via
+  // a ref so the effect generates exactly once per click, even if the generate
+  // callbacks change identity between renders.
+  const lastRegenerate = useRef(0);
   useEffect(() => {
-    if (regenerateTrigger > 0) {
+    if (regenerateTrigger > 0 && regenerateTrigger !== lastRegenerate.current) {
+      lastRegenerate.current = regenerateTrigger;
       if (mode === 'passphrase') generatePassphrase();
       else generatePassword();
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Header } from '@/components/Header';
 import { FeatureOverview } from '@/components/FeatureOverview';
 import { PasswordConfig } from '@/components/PasswordConfig';
@@ -15,6 +15,17 @@ export default function Home() {
   const [regenerateTrigger, setRegenerateTrigger] = useState(0);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const historyIdRef = useRef(0);
+
+  // Stable identity: PasswordConfig's regenerate effect depends on this, so an
+  // inline arrow here would make that effect re-run every render and loop.
+  const handlePasswordGenerated = useCallback((pw: string, bits: number) => {
+    setGeneratedPassword(pw);
+    setPasswordEntropyBits(bits);
+    setHistory(h => [
+      { id: historyIdRef.current++, password: pw, entropyBits: bits, createdAt: new Date() },
+      ...h,
+    ].slice(0, 10));
+  }, []);
 
   return (
     <div className="min-h-screen" style={{ background: '#0b0b0d' }}>
@@ -38,14 +49,7 @@ export default function Home() {
         <ErrorBoundary>
           <PasswordConfig
             regenerateTrigger={regenerateTrigger}
-            onPasswordGenerated={(pw, bits) => {
-              setGeneratedPassword(pw);
-              setPasswordEntropyBits(bits);
-              setHistory(h => [
-                { id: historyIdRef.current++, password: pw, entropyBits: bits, createdAt: new Date() },
-                ...h,
-              ].slice(0, 10));
-            }}
+            onPasswordGenerated={handlePasswordGenerated}
           />
           <GeneratedPassword
             password={generatedPassword}
