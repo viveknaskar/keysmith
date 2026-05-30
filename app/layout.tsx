@@ -25,6 +25,7 @@ export const metadata: Metadata = {
   icons: {
     icon: `${basePath}/favicon.svg`,
     shortcut: `${basePath}/favicon.svg`,
+    apple: `${basePath}/apple-touch-icon.png`,
   },
   openGraph: {
     type: 'website',

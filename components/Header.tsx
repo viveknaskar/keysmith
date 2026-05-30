@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 
 export function Header() {
   return (
@@ -20,7 +20,7 @@ export function Header() {
           className="ks-card w-16 h-16 rounded-2xl flex items-center justify-center"
           style={{ background: 'linear-gradient(160deg, #1a1a1f 0%, #121216 100%)', border: '1px solid #2e2e38' }}
         >
-          <ShieldCheck className="w-8 h-8" style={{ color: '#7aa2f7' }} />
+          <Logo className="w-9 h-9" />
         </div>
       </div>
 
