@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "overrides": {
     "minimatch": "^10.0.0"
@@ -53,7 +55,6 @@
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
-    "eslint": "^8.57.0",
     "eslint-config-next": "^16.1.6",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.446.0",
@@ -72,6 +73,10 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "5.2.2",
     "vaul": "^0.9.9",
-    "zod": "^3.23.8"
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.4",
+    "vitest": "^4.1.7"
   }
 }

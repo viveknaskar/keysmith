@@ -8,21 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Zap } from 'lucide-react';
-// Import the wordlist JSON directly rather than `import { wordlists } from 'bip39'`.
-// The named CommonJS re-export can resolve to `undefined` in some browser bundles,
-// and the direct import also keeps only the English list out of the bundle.
-import englishWordlist from 'bip39/src/wordlists/english.json';
-const wordlist = englishWordlist as string[];
+import { generatePassword as buildPassword, generatePassphrase as buildPassphrase, NUMBER_BITS } from '@/lib/password';
 
 // Radix <SelectItem> forbids an empty-string value, so "no separator" uses a
 // sentinel that is mapped back to '' at generation time.
 const NO_SEPARATOR = 'none';
-
-const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz';
-const UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const NUMBERS = '0123456789';
-const SPECIAL = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-const AMBIGUOUS = new Set('0Ol1I');
 
 interface PasswordConfigProps {
   regenerateTrigger: number;
@@ -45,105 +35,41 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Capitalizing word initials is deterministic, so it satisfies "needs an
-  // uppercase letter" rules without adding entropy. A trailing random 0–99 adds
-  // log2(100) bits, so it counts toward the reported strength.
-  const NUMBER_BITS = Math.log2(100);
   const passphraseEntropy = wordCount[0] * 11 + (passphraseOptions.includeNumber ? NUMBER_BITS : 0);
 
   const generatePassphrase = useCallback(() => {
     setError(null);
     setIsGenerating(true);
     try {
-      if (wordlist.length < 2048) {
-        setError('Word list failed to load. Please reload the page.');
-        return;
-      }
-      const count = wordCount[0];
-      let entropyBits = 11 * count;
-      // 2048 (BIP39 wordlist size) divides 65536 evenly, so `% 2048` on a
-      // uniform 16-bit value introduces no modulo bias.
-      const words: string[] = [];
-      const buf = new Uint16Array(count * 2);
-      while (words.length < count) {
-        crypto.getRandomValues(buf);
-        for (let i = 0; i < buf.length && words.length < count; i++) {
-          let word = wordlist[buf[i] % 2048];
-          if (passphraseOptions.capitalize) word = word.charAt(0).toUpperCase() + word.slice(1);
-          words.push(word);
-        }
-      }
-      const sep = separator === NO_SEPARATOR ? '' : separator;
-      let phrase = words.join(sep);
-
-      if (passphraseOptions.includeNumber) {
-        // Unbiased random 0–99 (reject bytes >= 200, the largest multiple of 100).
-        const numBuf = new Uint8Array(1);
-        do { crypto.getRandomValues(numBuf); } while (numBuf[0] >= 200);
-        phrase += sep + String(numBuf[0] % 100).padStart(2, '0');
-        entropyBits += NUMBER_BITS;
-      }
-
-      onPasswordGenerated(phrase, entropyBits);
+      const { value, entropyBits } = buildPassphrase({
+        wordCount: wordCount[0],
+        separator: separator === NO_SEPARATOR ? '' : separator,
+        capitalize: passphraseOptions.capitalize,
+        includeNumber: passphraseOptions.includeNumber,
+      });
+      onPasswordGenerated(value, entropyBits);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not generate passphrase.');
     } finally {
       setIsGenerating(false);
     }
-  }, [wordCount, separator, passphraseOptions, NUMBER_BITS, onPasswordGenerated]);
+  }, [wordCount, separator, passphraseOptions, onPasswordGenerated]);
 
   const generatePassword = useCallback(() => {
-    const filterAmbiguous = (chars: string) =>
-      options.excludeAmbiguous ? chars.split('').filter(c => !AMBIGUOUS.has(c)).join('') : chars;
-
     setError(null);
     setIsGenerating(true);
     try {
-      const parts: { chars: string; enabled: boolean }[] = [
-        { chars: filterAmbiguous(LOWERCASE), enabled: options.lowercase },
-        { chars: filterAmbiguous(UPPERCASE), enabled: options.uppercase },
-        { chars: filterAmbiguous(NUMBERS),   enabled: options.numbers },
-        { chars: filterAmbiguous(SPECIAL),   enabled: options.special },
-      ];
-      const enabledParts = parts.filter(p => p.enabled && p.chars.length > 0);
-      if (enabledParts.length === 0) {
-        setError('Select at least one character type.');
-        return;
-      }
-      const charset = enabledParts.map(p => p.chars).join('');
-      const length = passwordLength[0];
-      const entropyBits = Math.log2(charset.length) * length;
-
-      // Pull every byte from the browser's CSPRNG. Rejection sampling
-      // (discarding bytes >= maxValid) guarantees an unbiased uniform pick.
-      const randomBytes = new Uint8Array(length * 8);
-      crypto.getRandomValues(randomBytes);
-      let byteIdx = 0;
-      const pickChar = (cs: string): string => {
-        const maxValid = 256 - (256 % cs.length);
-        while (true) {
-          if (byteIdx >= randomBytes.length) {
-            crypto.getRandomValues(randomBytes);
-            byteIdx = 0;
-          }
-          const byte = randomBytes[byteIdx++];
-          if (byte < maxValid) return cs[byte % cs.length];
-        }
-      };
-
-      const mandatoryCount = Math.min(enabledParts.length, length);
-      const baseCount = length - mandatoryCount;
-      const chars: string[] = [];
-      for (let i = 0; i < baseCount; i++) chars.push(pickChar(charset));
-      for (let i = 0; i < mandatoryCount; i++) chars.push(pickChar(enabledParts[i].chars));
-
-      // Fisher-Yates shuffle (also CSPRNG-sourced) so the guaranteed-per-class
-      // characters aren't predictably clustered at the end.
-      const shuffleBytes = new Uint32Array(chars.length);
-      crypto.getRandomValues(shuffleBytes);
-      for (let i = chars.length - 1; i > 0; i--) {
-        const j = shuffleBytes[i] % (i + 1);
-        [chars[i], chars[j]] = [chars[j], chars[i]];
-      }
-      onPasswordGenerated(chars.join(''), entropyBits);
+      const { value, entropyBits } = buildPassword({
+        length: passwordLength[0],
+        lowercase: options.lowercase,
+        uppercase: options.uppercase,
+        numbers: options.numbers,
+        special: options.special,
+        excludeAmbiguous: options.excludeAmbiguous,
+      });
+      onPasswordGenerated(value, entropyBits);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not generate password.');
     } finally {
       setIsGenerating(false);
     }

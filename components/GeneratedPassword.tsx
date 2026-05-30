@@ -105,7 +105,9 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
   };
 
   useEffect(() => {
-    if (!password) { setZxcvbnScore(null); setZxcvbnFeedback([]); return; }
+    // When there's no password the component renders the empty state below and
+    // never shows a score, so there's nothing to reset here — just skip.
+    if (!password) return;
     let cancelled = false;
     loadZxcvbn().then(run => {
       if (cancelled) return;
