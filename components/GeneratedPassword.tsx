@@ -125,7 +125,7 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
   if (!password) {
     return (
       <div
-        className="rounded-xl p-8 text-center"
+        className="ks-card rounded-xl p-8 text-center"
         style={{ background: '#141417', border: '1px solid #26262b' }}
       >
         <div
@@ -149,7 +149,7 @@ export function GeneratedPassword({ password, entropyBits, onRegenerate }: Gener
 
   return (
     <div
-      className="rounded-xl overflow-hidden"
+      className="ks-card rounded-xl overflow-hidden"
       style={{
         background: '#141417',
         border: `1px solid ${cfg.border}`,

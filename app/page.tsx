@@ -18,11 +18,17 @@ export default function Home() {
 
   return (
     <div className="min-h-screen" style={{ background: '#0b0b0d' }}>
-      {/* Subtle top vignette for depth, no neon */}
+      {/* Layered, subtle backdrop for depth, no neon */}
       <div
         className="fixed top-0 left-0 right-0 h-[420px] pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(122,162,247,0.05) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(122,162,247,0.07) 0%, transparent 70%)',
+        }}
+      />
+      <div
+        className="fixed bottom-0 left-0 right-0 h-[360px] pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(122,162,247,0.04) 0%, transparent 70%)',
         }}
       />
 

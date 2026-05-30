@@ -84,7 +84,7 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
 
   return (
     <div
-      className="rounded-xl overflow-hidden"
+      className="ks-card rounded-xl overflow-hidden"
       style={{ background: '#141417', border: '1px solid #26262b' }}
     >
       <div className="px-6 pt-5 pb-3">
@@ -205,7 +205,7 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
             <Button
               onClick={generatePassword}
               disabled={isGenerating}
-              className="w-full h-11 text-sm font-semibold transition-all"
+              className="ks-glow w-full h-11 text-sm font-semibold transition-all"
               style={{
                 background: isGenerating ? '#1a1a1e' : '#7aa2f7',
                 color: isGenerating ? '#52525b' : '#0b0b0d',
@@ -313,7 +313,7 @@ export function PasswordConfig({ regenerateTrigger, onPasswordGenerated }: Passw
             <Button
               onClick={generatePassphrase}
               disabled={isGenerating}
-              className="w-full h-11 text-sm font-semibold transition-all"
+              className="ks-glow w-full h-11 text-sm font-semibold transition-all"
               style={{
                 background: isGenerating ? '#1a1a1e' : 'rgba(122,162,247,0.12)',
                 color: isGenerating ? '#52525b' : '#7aa2f7',

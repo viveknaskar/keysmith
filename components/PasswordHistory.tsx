@@ -36,7 +36,7 @@ export function PasswordHistory({ entries, onClear }: PasswordHistoryProps) {
 
   return (
     <div
-      className="rounded-xl overflow-hidden"
+      className="ks-card rounded-xl overflow-hidden"
       style={{ background: '#141417', border: '1px solid #26262b' }}
     >
       {/* Header */}

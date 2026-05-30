@@ -21,7 +21,7 @@ const points = [
 export function PasswordStrengthTester() {
   return (
     <div
-      className="rounded-xl p-6"
+      className="ks-card rounded-xl p-6"
       style={{ background: '#141417', border: '1px solid #26262b' }}
     >
       <div className="mb-5">

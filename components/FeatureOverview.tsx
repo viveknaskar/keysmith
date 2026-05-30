@@ -29,18 +29,12 @@ export function FeatureOverview() {
       {features.map((feature, index) => (
         <div
           key={index}
-          className="group rounded-xl p-5 transition-colors duration-200"
+          className="ks-card ks-lift group rounded-xl p-5"
           style={{ background: '#141417', border: '1px solid #26262b' }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLDivElement).style.borderColor = '#34343c';
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLDivElement).style.borderColor = '#26262b';
-          }}
         >
           <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center mb-4"
-            style={{ background: '#1a1a1e', border: '1px solid #26262b' }}
+            className="w-9 h-9 rounded-lg flex items-center justify-center mb-4 transition-all duration-200 group-hover:border-[rgba(122,162,247,0.35)]"
+            style={{ background: 'rgba(122,162,247,0.08)', border: '1px solid rgba(122,162,247,0.18)' }}
           >
             <feature.icon className="w-4.5 h-4.5" style={{ color: '#7aa2f7' }} />
           </div>
