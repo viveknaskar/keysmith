@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from 'react';
+import { Coffee } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { FeatureOverview } from '@/components/FeatureOverview';
 import { PasswordConfig } from '@/components/PasswordConfig';
@@ -60,8 +61,17 @@ export default function Home() {
           <PasswordStrengthTester />
         </ErrorBoundary>
 
-        <footer className="text-center text-xs text-zinc-700 py-4">
-          Keysmith. All generation happens client-side. Nothing is stored or transmitted.
+        <footer className="text-center text-xs text-zinc-700 py-4 space-y-3">
+          <p>Keysmith. All generation happens client-side. Nothing is stored or transmitted.</p>
+          <a
+            href="https://buymeacoffee.com/viveknaskar"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-zinc-600 hover:text-[#7aa2f7] transition-colors"
+          >
+            <Coffee className="w-3.5 h-3.5" />
+            Buy me a coffee
+          </a>
         </footer>
       </div>
     </div>

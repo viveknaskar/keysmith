@@ -156,6 +156,14 @@ components/
 
 ---
 
+## Support
+
+If Keysmith is useful to you, you can support its development:
+
+<a href="https://buymeacoffee.com/viveknaskar" target="_blank"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-viveknaskar-FFDD00?style=flat-square&logo=buymeacoffee&logoColor=000" alt="Buy me a coffee" /></a>
+
+---
+
 ## License
 
 MIT
