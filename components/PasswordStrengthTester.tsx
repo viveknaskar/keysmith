@@ -51,8 +51,8 @@ export function PasswordStrengthTester() {
       >
         <Ban className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
         <p className="text-xs text-amber-600/90 leading-relaxed">
-          <span className="font-medium text-amber-500">Never paste a real password into any website</span> to
-          &ldquo;check&rdquo; it, including ones that claim to run locally. A password you intend to use should only
+          <span className="font-medium text-amber-500">Never paste a real password into any website</span>{' '}
+          to &ldquo;check&rdquo; it, including ones that claim to run locally. A password you intend to use should only
           ever be typed into the account it belongs to. The analysis above happens entirely in this tab and is never sent anywhere.
         </p>
       </div>
