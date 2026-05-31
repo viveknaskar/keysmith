@@ -1,5 +1,7 @@
 # Keysmith
 
+[![Visitors](https://visitor-badge.laobi.icu/badge?page_id=viveknaskar.keysmith)](https://github.com/viveknaskar/keysmith)
+
 Generate strong, high-entropy passwords and passphrases entirely in your browser, using the Web Crypto API's cryptographically secure random number generator.
 
 ---
